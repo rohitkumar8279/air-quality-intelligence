@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 class AQIRecordBase(BaseModel):
     city: str
@@ -15,39 +15,8 @@ class AQIRecordBase(BaseModel):
 class AQIRecordCreate(AQIRecordBase):
     pass
 
-class AQIRecord(AQIRecordBase):
+class AQIRecordResponse(AQIRecordBase):
     id: int
     timestamp: datetime
 
-    class Config:
-        from_attributes = True
-
-class ForecastBase(BaseModel):
-    city: str
-    forecast_date: datetime
-    predicted_aqi: float
-
-class ForecastCreate(ForecastBase):
-    pass
-
-class Forecast(ForecastBase):
-    id: int
-    created_at: datetime
-
-    class Config:
-        from_attributes = True
-
-class AdvisoryBase(BaseModel):
-    city: str
-    aqi_level: str
-    health_advice: str
-
-class AdvisoryCreate(AdvisoryBase):
-    pass
-
-class Advisory(AdvisoryBase):
-    id: int
-    timestamp: datetime
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

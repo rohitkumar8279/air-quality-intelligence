@@ -1,136 +1,84 @@
-from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-import joblib
-import sys
-import os
+from sqlalchemy import text
+import logging
 
-# Adjust path to import from database and backend
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from backend.database import engine, get_db, Base
+import backend.models as models
+import backend.crud as crud
+import backend.schemas as schemas
+from backend.services.openaq import fetch_delhi_aqi
+from backend.services.weather import fetch_delhi_weather
 
-from database import crud, models, schemas
-from database.database import engine, get_db
+# Setup basic logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-from google import genai
-from google.genai import types
+# Automatically create tables if they do not exist
+print("Connecting to PostgreSQL and creating tables if they don't exist...")
+Base.metadata.create_all(bind=engine)
 
-models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI(title="Urban Air Quality Intelligence API")
-
-# Configure CORS for frontend access
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title="Urban Air Quality Intelligence API",
+    description="Backend API for managing AQI data and predictions.",
+    version="1.0.0"
 )
 
-# Load ML Model
-MODEL_PATH = os.path.join(os.path.dirname(__file__), '..', 'ml', 'model.joblib')
-try:
-    xgb_model = joblib.load(MODEL_PATH)
-except:
-    xgb_model = None
-
-# Gemini AI Setup
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    ai_client = genai.Client(api_key=GEMINI_API_KEY)
-else:
-    ai_client = None
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Urban Air Quality Intelligence API"}
-
-@app.get("/api/current/{city}", response_model=schemas.AQIRecord)
-def get_current_aqi(city: str, db: Session = Depends(get_db)):
-    record = crud.get_latest_aqi(db, city=city)
-    if record is None:
-        raise HTTPException(status_code=404, detail="AQI data not found for this city")
-    return record
-
-@app.get("/api/history/{city}")
-def get_history(city: str, db: Session = Depends(get_db)):
-    records = crud.get_recent_aqi_records(db, city=city, limit=7)
-    return records
-
-@app.get("/api/forecast/{city}")
-def get_city_forecast(city: str, db: Session = Depends(get_db)):
-    record = crud.get_latest_aqi(db, city=city)
-    if record is None:
-        raise HTTPException(status_code=404, detail="AQI data not found for this city")
-    
-    if xgb_model is None:
-        return {"predicted_aqi": record.aqi, "forecast_date": datetime.utcnow() + timedelta(days=1)}
-        
-    import pandas as pd
-    df = pd.DataFrame([{
-        "aqi": record.aqi,
-        "temperature": record.temperature,
-        "humidity": record.humidity,
-        "wind_speed": record.wind_speed
-    }])
-    pred = xgb_model.predict(df)[0]
-    
-    return {
-        "city": city,
-        "forecast_date": datetime.utcnow() + timedelta(days=1),
-        "predicted_aqi": float(pred)
-    }
-
-class PredictRequest(BaseModel):
-    aqi: float
-    temperature: float
-    humidity: float
-    wind_speed: float
-
-@app.post("/api/predict")
-def predict_aqi(req: PredictRequest):
-    if xgb_model is None:
-        raise HTTPException(status_code=500, detail="ML model not loaded")
-    import pandas as pd
-    df = pd.DataFrame([{
-        "aqi": req.aqi,
-        "temperature": req.temperature,
-        "humidity": req.humidity,
-        "wind_speed": req.wind_speed
-    }])
-    pred = xgb_model.predict(df)[0]
-    return {"predicted_aqi": float(pred)}
-
-@app.get("/api/advisory/{city}", response_model=schemas.Advisory)
-def get_city_advisory(city: str, db: Session = Depends(get_db)):
-    advisory = crud.get_latest_advisory(db, city=city)
-    if advisory is None:
-        raise HTTPException(status_code=404, detail="Advisory not found for this city")
-    return advisory
-
-class ChatRequest(BaseModel):
-    message: str
-    city: str
-
-@app.post("/api/chat")
-def chat_with_ai(req: ChatRequest, db: Session = Depends(get_db)):
-    if ai_client is None:
-        return {"reply": "GEMINI_API_KEY is not configured. I am unable to connect to the AI model."}
-    
-    record = crud.get_latest_aqi(db, city=req.city)
-    context = ""
-    if record:
-        context = f"Current conditions in {req.city}: AQI {record.aqi}, PM2.5 {record.pm25}, Temp {record.temperature}C, Wind {record.wind_speed}km/h."
-    
-    prompt = f"You are an Urban Air Quality Intelligence Assistant. Context: {context}\nUser: {req.message}"
-    
+@app.get("/health", tags=["System"])
+def health_check(db: Session = Depends(get_db)):
+    """
+    Health check endpoint.
+    Verifies that the API is running and that the PostgreSQL connection is active.
+    """
     try:
-        response = ai_client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
-        return {"reply": response.text}
+        db.execute(text("SELECT 1"))
+        return {"status": "healthy", "api": "up", "database": "connected"}
     except Exception as e:
-        return {"reply": f"AI Error: {str(e)}"}
+        raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
+
+@app.get("/api/current", response_model=schemas.AQIRecordResponse, tags=["Air Quality"])
+def get_current_aqi(db: Session = Depends(get_db)):
+    """
+    Fetches the latest live data from external APIs for Delhi, 
+    stores it in the database, and returns the result.
+    If external APIs fail, it falls back to the most recent record in the database.
+    """
+    city = "Delhi"
+    
+    # 1. Fetch from external APIs
+    aqi_data = fetch_delhi_aqi()
+    weather_data = fetch_delhi_weather()
+    
+    if aqi_data and weather_data:
+        # 2. Parse and combine data
+        record_in = schemas.AQIRecordCreate(
+            city=city,
+            aqi=aqi_data.get("aqi", 0),
+            pm25=aqi_data.get("pm25"),
+            pm10=aqi_data.get("pm10"),
+            no2=aqi_data.get("no2"),
+            temperature=weather_data.get("temperature"),
+            humidity=weather_data.get("humidity"),
+            wind_speed=weather_data.get("wind_speed")
+        )
+        
+        # 3. Store in PostgreSQL
+        try:
+            db_record = crud.create_aqi_record(db, record_in)
+            logger.info(f"Successfully ingested new AQI data for {city}. ID: {db_record.id}")
+            return db_record
+        except Exception as e:
+            logger.error(f"Failed to save record to DB: {str(e)}")
+            # Fall through to fallback mechanism
+            
+    # 4. Fallback mechanism: Return latest from DB if APIs fail
+    logger.warning("External APIs failed or DB save failed. Falling back to latest database record.")
+    latest_record = crud.get_latest_aqi(db, city)
+    
+    if not latest_record:
+        raise HTTPException(
+            status_code=404, 
+            detail="No data available from external APIs and no historical data found in the database."
+        )
+        
+    return latest_record
