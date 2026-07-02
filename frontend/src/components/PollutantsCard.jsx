@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './PollutantsCard.css';
 
 const PollutantsCard = ({ pm25, pm10, no2 }) => {
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimated(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Use provided data and mock the rest to match mockup
   const pollutants = [
     { name: 'PM2.5', value: pm25 || 58, max: 100, unit: 'µg/m³', color: '#F59E0B' },
@@ -37,9 +44,10 @@ const PollutantsCard = ({ pm25, pm10, no2 }) => {
                 <div 
                   className="pollutant-bar-fill-v2" 
                   style={{ 
-                    width: `${percentage}%`,
+                    width: animated ? `${percentage}%` : '0%',
                     backgroundColor: pollutant.color,
-                    boxShadow: `0 0 8px ${pollutant.color}`
+                    boxShadow: `0 0 8px ${pollutant.color}`,
+                    transition: 'width 1.2s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 ></div>
               </div>

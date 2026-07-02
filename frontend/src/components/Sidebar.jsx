@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { NavLink } from 'react-router-dom';
 import { 
   Home, 
   Wind, 
@@ -7,25 +8,30 @@ import {
   History, 
   HeartPulse, 
   Bell,
-  FileText,
+  BarChart2,
+  BrainCircuit,
   Settings,
   MapPin,
   RefreshCw,
   Leaf
 } from 'lucide-react';
+import { CityContext } from '../context/CityContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
+  const { city } = useContext(CityContext);
+
   const menuItems = [
-    { icon: <Home size={18} />, label: 'Overview', active: true },
-    { icon: <Wind size={18} />, label: 'Air Quality' },
-    { icon: <CloudSun size={18} />, label: 'Weather' },
-    { icon: <Map size={18} />, label: 'Map View' },
-    { icon: <History size={18} />, label: 'History' },
-    { icon: <HeartPulse size={18} />, label: 'Health Advice' },
-    { icon: <Bell size={18} />, label: 'Alerts' },
-    { icon: <FileText size={18} />, label: 'Reports' },
-    { icon: <Settings size={18} />, label: 'Settings' },
+    { icon: <Home size={18} />, label: 'Overview', path: '/' },
+    { icon: <BarChart2 size={18} />, label: 'Analytics', path: '/analytics' },
+    { icon: <BrainCircuit size={18} />, label: 'AI Insights', path: '/ai-insights' },
+    { icon: <Wind size={18} />, label: 'Air Quality', path: '/air-quality' },
+    { icon: <CloudSun size={18} />, label: 'Weather', path: '/weather' },
+    { icon: <Map size={18} />, label: 'Map View', path: '/map' },
+    { icon: <History size={18} />, label: 'History', path: '/history' },
+    { icon: <HeartPulse size={18} />, label: 'Health Advice', path: '/health' },
+    { icon: <Bell size={18} />, label: 'Alerts', path: '/alerts' },
+    { icon: <Settings size={18} />, label: 'Settings', path: '/settings' },
   ];
 
   return (
@@ -41,9 +47,15 @@ const Sidebar = () => {
       <nav className="sidebar-nav">
         <ul className="nav-list">
           {menuItems.map((item, index) => (
-            <li key={index} className={`nav-item ${item.active ? 'active' : ''}`}>
-              <div className="nav-icon">{item.icon}</div>
-              <span>{item.label}</span>
+            <li key={index} className="nav-item-container">
+              <NavLink 
+                to={item.path} 
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', width: '100%', gap: '1rem', color: 'inherit' }}
+              >
+                <div className="nav-icon">{item.icon}</div>
+                <span>{item.label}</span>
+              </NavLink>
             </li>
           ))}
         </ul>
@@ -53,7 +65,7 @@ const Sidebar = () => {
         <div className="sidebar-widget">
           <MapPin size={18} className="widget-icon text-muted" />
           <div className="widget-info">
-            <strong>Delhi, India</strong>
+            <strong style={{ maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{city}</strong>
             <span className="text-primary" style={{color: 'var(--accent-primary)', fontSize: '10px'}}>Change Location</span>
           </div>
         </div>

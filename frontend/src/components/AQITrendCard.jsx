@@ -18,10 +18,10 @@ const AQITrendCard = () => {
           </defs>
           
           {/* Y Axis Lines */}
-          <path d="M 0 0 L 400 0" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-          <path d="M 0 45 L 400 45" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-          <path d="M 0 90 L 400 90" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-          <path d="M 0 135 L 400 135" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+          <path d="M 0 0 L 400 0" stroke="var(--border-light)" strokeWidth="1" />
+          <path d="M 0 45 L 400 45" stroke="var(--border-light)" strokeWidth="1" />
+          <path d="M 0 90 L 400 90" stroke="var(--border-light)" strokeWidth="1" />
+          <path d="M 0 135 L 400 135" stroke="var(--border-light)" strokeWidth="1" />
           
           {/* Filled Area */}
           <path 

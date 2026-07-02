@@ -10,9 +10,12 @@ from backend.database import engine, get_db, Base
 import backend.models as models
 import backend.crud as crud
 import backend.schemas as schemas
-from backend.services.openaq import fetch_delhi_aqi
-from backend.services.weather import fetch_delhi_weather
+from backend.services.openaq import fetch_aqi
+from backend.services.weather import fetch_weather
 import backend.services.prediction as prediction_service
+from backend.config.cities import CITY_CONFIG
+
+from backend.routers import auth, users
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO)
@@ -28,14 +31,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.include_router(auth.router)
+app.include_router(users.router)
+
+import os
+
 # Setup CORS
+cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For production, specify the exact frontend domain
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Trigger auto-reload to load new bcrypt version
 
 
 @app.get("/health", tags=["System"])
@@ -51,17 +63,19 @@ def health_check(db: Session = Depends(get_db)):
         raise HTTPException(status_code=503, detail=f"Database connection failed: {str(e)}")
 
 @app.get("/api/current", response_model=schemas.AQIRecordResponse, tags=["Air Quality"])
-def get_current_aqi(db: Session = Depends(get_db)):
+def get_current_aqi(city: str = Query("Delhi", description="Name of the city"), db: Session = Depends(get_db)):
     """
-    Fetches the latest live data from external APIs for Delhi, 
+    Fetches the latest live data from external APIs for the requested city, 
     stores it in the database, and returns the result.
     If external APIs fail, it falls back to the most recent record in the database.
     """
-    city = "Delhi"
-    
+    config = CITY_CONFIG.get(city)
+    if not config:
+        raise HTTPException(status_code=400, detail=f"City '{city}' is not supported.")
+        
     # 1. Fetch from external APIs
-    aqi_data = fetch_delhi_aqi()
-    weather_data = fetch_delhi_weather()
+    aqi_data = fetch_aqi(config["lat"], config["lon"])
+    weather_data = fetch_weather(config["lat"], config["lon"])
     
     if aqi_data and weather_data:
         # 2. Parse and combine data
@@ -112,21 +126,23 @@ def get_history(
     ),
     skip: int = Query(0, ge=0, description="Number of records to skip (for pagination)"),
     limit: int = Query(500, ge=1, le=5000, description="Maximum number of records to return"),
+    city: str = Query("Delhi", description="Name of the city"),
     db: Session = Depends(get_db)
 ):
     """
-    Returns historical AQI records for Delhi.
+    Returns historical AQI records for a specific city.
 
     **Without date filters**: Returns the most recent records (paginated).
 
     **With date filters**: Returns records within the specified date range.
 
     Examples:
-    - `GET /api/history` → latest 500 records
+    - `GET /api/history?city=Mumbai` → latest 500 records
     - `GET /api/history?start_date=2023-01-01&end_date=2023-12-31` → all 2023 records
     - `GET /api/history?skip=500&limit=500` → second page of results
     """
-    city = "Delhi"
+    if city not in CITY_CONFIG:
+        raise HTTPException(status_code=400, detail=f"City '{city}' is not supported.")
 
     # Validate: if one date is provided, both must be provided
     if (start_date and not end_date) or (end_date and not start_date):
@@ -152,15 +168,17 @@ def get_history(
 # --- Phase 7: ML Prediction Endpoint ---
 
 @app.get("/api/predict", response_model=schemas.PredictionResponse, tags=["Prediction"])
-def predict_aqi(db: Session = Depends(get_db)):
+def predict_aqi(city: str = Query("Delhi"), db: Session = Depends(get_db)):
     """
-    Predicts future AQI based on the latest available data for Delhi.
+    Predicts future AQI based on the latest available data for the requested city.
     """
     # Verify model is loaded
     if prediction_service.model is None:
         raise HTTPException(status_code=500, detail="Prediction model is currently unavailable.")
         
-    city = "Delhi"
+    if city not in CITY_CONFIG:
+        raise HTTPException(status_code=400, detail=f"City '{city}' is not supported.")
+        
     latest_record = crud.get_latest_aqi(db, city)
     
     if not latest_record:
@@ -172,3 +190,53 @@ def predict_aqi(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Prediction failed: {str(e)}")
         raise HTTPException(status_code=500, detail="Prediction generation failed.")
+
+# --- Phase 11: AI Insights & Intelligent Analytics ---
+
+import backend.services.insights as insights_service
+
+@app.get("/api/insights", tags=["AI Insights"])
+def get_ai_insights(city: str = Query("Delhi"), db: Session = Depends(get_db)):
+    latest_record = crud.get_latest_aqi(db, city)
+    history = crud.get_history(db, city, skip=1, limit=1)
+    previous_record = history[0] if history else None
+    return insights_service.generate_insights(latest_record, previous_record)
+
+@app.get("/api/prediction/explanation", tags=["AI Insights"])
+def get_prediction_explanation(city: str = Query("Delhi"), db: Session = Depends(get_db)):
+    if prediction_service.model is None:
+        raise HTTPException(status_code=500, detail="Model unavailable.")
+    latest_record = crud.get_latest_aqi(db, city)
+    pred_result = prediction_service.generate_prediction(latest_record)
+    return insights_service.generate_prediction_explanation(latest_record, pred_result["predicted_aqi"])
+
+@app.get("/api/daily-summary", tags=["AI Insights"])
+def get_daily_summary(city: str = Query("Delhi"), db: Session = Depends(get_db)):
+    latest_record = crud.get_latest_aqi(db, city)
+    pred_result = prediction_service.generate_prediction(latest_record)
+    predicted_aqi = pred_result["predicted_aqi"] if pred_result else getattr(latest_record, 'aqi', 0)
+    return insights_service.generate_daily_summary(latest_record, predicted_aqi)
+
+@app.get("/api/health-advice", tags=["AI Insights"])
+def get_health_advice(city: str = Query("Delhi"), db: Session = Depends(get_db)):
+    latest_record = crud.get_latest_aqi(db, city)
+    aqi = latest_record.aqi if latest_record else 0
+    return insights_service.generate_health_advice(aqi)
+
+@app.get("/api/pollution-analysis", tags=["AI Insights"])
+def get_pollution_analysis(city: str = Query("Delhi"), db: Session = Depends(get_db)):
+    latest_record = crud.get_latest_aqi(db, city)
+    return insights_service.generate_pollution_analysis(latest_record)
+
+@app.get("/api/weather-impact", tags=["AI Insights"])
+def get_weather_impact(city: str = Query("Delhi"), db: Session = Depends(get_db)):
+    latest_record = crud.get_latest_aqi(db, city)
+    return insights_service.generate_weather_impact(latest_record)
+
+@app.get("/api/feature-importance", tags=["AI Insights"])
+def get_feature_importance():
+    return insights_service.get_feature_importance()
+
+@app.get("/api/model-info", tags=["AI Insights"])
+def get_model_info():
+    return insights_service.get_model_info()

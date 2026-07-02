@@ -38,3 +38,39 @@ class PredictionResponse(BaseModel):
     predicted_aqi: float
     prediction_time: datetime
     status: str
+
+# --- Phase 12: Auth & Users ---
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    name: str
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    name: str
+    profile_picture: str
+    joined_date: datetime
+    prediction_count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+class UserPreferenceBase(BaseModel):
+    default_city: str
+    theme: str
+    language: str
+    aqi_units: str
+    auto_refresh: int
+
+class UserPreferenceResponse(UserPreferenceBase):
+    id: int
+    user_id: int
+    model_config = ConfigDict(from_attributes=True)

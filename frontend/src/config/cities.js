@@ -1,0 +1,23 @@
+export const CITY_CONFIG = {
+  "Delhi": { lat: 28.6139, lon: 77.2090 },
+  "Mumbai": { lat: 19.0760, lon: 72.8777 },
+  "Bengaluru": { lat: 12.9716, lon: 77.5946 },
+  "Chennai": { lat: 13.0827, lon: 80.2707 },
+  "Hyderabad": { lat: 17.3850, lon: 78.4867 },
+  "Kolkata": { lat: 22.5726, lon: 88.3639 },
+  "Pune": { lat: 18.5204, lon: 73.8567 },
+  "Ahmedabad": { lat: 23.0225, lon: 72.5714 },
+  "Jaipur": { lat: 26.9124, lon: 75.7873 },
+  "Lucknow": { lat: 26.8467, lon: 80.9462 },
+  "Surat": { lat: 21.1702, lon: 72.8311 },
+  "Kanpur": { lat: 26.4499, lon: 80.3319 },
+  "Nagpur": { lat: 21.1458, lon: 79.0882 },
+  "Indore": { lat: 22.7196, lon: 75.8577 },
+  "Bhopal": { lat: 23.2599, lon: 77.4126 },
+  "Visakhapatnam": { lat: 17.6868, lon: 83.2185 },
+  "Patna": { lat: 25.5941, lon: 85.1376 },
+  "Vadodara": { lat: 22.3072, lon: 73.1812 },
+  "Ludhiana": { lat: 30.9010, lon: 75.8573 },
+  "Agra": { lat: 27.1767, lon: 78.0081 },
+  "Gwalior": { lat: 26.2124, lon: 78.1772 }
+};

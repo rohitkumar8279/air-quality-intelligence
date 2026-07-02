@@ -1,7 +1,7 @@
 import React from 'react';
 import './HeroSection.css';
 
-const HeroSection = ({ city = "Delhi, India" }) => {
+const HeroSection = ({ city }) => {
   return (
     <div className="hero-section animate-fade-in">
       <div className="hero-bg-glow"></div>

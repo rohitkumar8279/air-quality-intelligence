@@ -1,0 +1,23 @@
+CITY_CONFIG = {
+    "Delhi": { "lat": 28.6139, "lon": 77.2090, "state": "Delhi", "tz": "Asia/Kolkata", "bg_image": "india_gate.jpg" },
+    "Mumbai": { "lat": 19.0760, "lon": 72.8777, "state": "Maharashtra", "tz": "Asia/Kolkata", "bg_image": "gateway_of_india.jpg" },
+    "Bengaluru": { "lat": 12.9716, "lon": 77.5946, "state": "Karnataka", "tz": "Asia/Kolkata", "bg_image": "vidhana_soudha.jpg" },
+    "Chennai": { "lat": 13.0827, "lon": 80.2707, "state": "Tamil Nadu", "tz": "Asia/Kolkata", "bg_image": "marina_beach.jpg" },
+    "Hyderabad": { "lat": 17.3850, "lon": 78.4867, "state": "Telangana", "tz": "Asia/Kolkata", "bg_image": "charminar.jpg" },
+    "Kolkata": { "lat": 22.5726, "lon": 88.3639, "state": "West Bengal", "tz": "Asia/Kolkata", "bg_image": "howrah_bridge.jpg" },
+    "Pune": { "lat": 18.5204, "lon": 73.8567, "state": "Maharashtra", "tz": "Asia/Kolkata", "bg_image": "shaniwar_wada.jpg" },
+    "Ahmedabad": { "lat": 23.0225, "lon": 72.5714, "state": "Gujarat", "tz": "Asia/Kolkata", "bg_image": "sabarmati_ashram.jpg" },
+    "Jaipur": { "lat": 26.9124, "lon": 75.7873, "state": "Rajasthan", "tz": "Asia/Kolkata", "bg_image": "hawa_mahal.jpg" },
+    "Lucknow": { "lat": 26.8467, "lon": 80.9462, "state": "Uttar Pradesh", "tz": "Asia/Kolkata", "bg_image": "bara_imambara.jpg" },
+    "Surat": { "lat": 21.1702, "lon": 72.8311, "state": "Gujarat", "tz": "Asia/Kolkata", "bg_image": "surat.jpg" },
+    "Kanpur": { "lat": 26.4499, "lon": 80.3319, "state": "Uttar Pradesh", "tz": "Asia/Kolkata", "bg_image": "kanpur.jpg" },
+    "Nagpur": { "lat": 21.1458, "lon": 79.0882, "state": "Maharashtra", "tz": "Asia/Kolkata", "bg_image": "nagpur.jpg" },
+    "Indore": { "lat": 22.7196, "lon": 75.8577, "state": "Madhya Pradesh", "tz": "Asia/Kolkata", "bg_image": "indore.jpg" },
+    "Bhopal": { "lat": 23.2599, "lon": 77.4126, "state": "Madhya Pradesh", "tz": "Asia/Kolkata", "bg_image": "bhopal.jpg" },
+    "Visakhapatnam": { "lat": 17.6868, "lon": 83.2185, "state": "Andhra Pradesh", "tz": "Asia/Kolkata", "bg_image": "vizag.jpg" },
+    "Patna": { "lat": 25.5941, "lon": 85.1376, "state": "Bihar", "tz": "Asia/Kolkata", "bg_image": "patna.jpg" },
+    "Vadodara": { "lat": 22.3072, "lon": 73.1812, "state": "Gujarat", "tz": "Asia/Kolkata", "bg_image": "vadodara.jpg" },
+    "Ludhiana": { "lat": 30.9010, "lon": 75.8573, "state": "Punjab", "tz": "Asia/Kolkata", "bg_image": "ludhiana.jpg" },
+    "Agra": { "lat": 27.1767, "lon": 78.0081, "state": "Uttar Pradesh", "tz": "Asia/Kolkata", "bg_image": "taj_mahal.jpg" },
+    "Gwalior": { "lat": 26.2124, "lon": 78.1772, "state": "Madhya Pradesh", "tz": "Asia/Kolkata", "bg_image": "gwalior.jpg" }
+}

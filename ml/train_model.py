@@ -2,7 +2,6 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-import joblib
 import sys
 import os
 import random
@@ -94,8 +93,8 @@ def train():
         print(f"Model trained. MSE: {mse:.2f}")
         
         # Save model
-        model_path = os.path.join(os.path.dirname(__file__), 'model.joblib')
-        joblib.dump(model, model_path)
+        model_path = os.path.join(os.path.dirname(__file__), 'model.json')
+        model.save_model(model_path)
         print(f"Model saved to {model_path}")
         
     finally:

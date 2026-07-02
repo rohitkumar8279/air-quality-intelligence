@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { CityContext } from '../context/CityContext';
 import { Sun, Droplets, Wind, Leaf, Compass } from 'lucide-react';
 import AQICard from '../components/AQICard';
 import PollutantsCard from '../components/PollutantsCard';
@@ -6,10 +7,13 @@ import MapCard from '../components/MapCard';
 import ForecastCard from '../components/ForecastCard';
 import HealthAdvisoryCard from '../components/HealthAdvisoryCard';
 import AQITrendCard from '../components/AQITrendCard';
+import PredictionCard from '../components/PredictionCard';
+import AQIWatchlist from '../components/AQIWatchlist';
 import { fetchCurrentData } from '../services/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
+  const { city } = useContext(CityContext);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,7 +22,7 @@ const Dashboard = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const responseData = await fetchCurrentData();
+        const responseData = await fetchCurrentData(city);
         setData(responseData);
         setError(null);
       } catch (err) {
@@ -32,7 +36,7 @@ const Dashboard = () => {
     loadData();
     const interval = setInterval(loadData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [city]);
 
   if (loading && !data) {
     return (
@@ -150,10 +154,16 @@ const Dashboard = () => {
           <MapCard aqi={data.aqi} />
         </div>
 
-        {/* Bottom Cards Row */}
+        <AQIWatchlist />
+
+        {/* Bottom Cards Row (Now starting with PredictionCard) */}
         <div className="grid-row-3" style={{marginTop: '1.5rem'}}>
+          <PredictionCard />
           <ForecastCard />
           <HealthAdvisoryCard aqi={data.aqi} />
+        </div>
+
+        <div className="grid-row-3" style={{marginTop: '1.5rem'}}>
           <AQITrendCard />
         </div>
 

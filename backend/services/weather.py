@@ -3,30 +3,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Open-Meteo Weather API for Delhi
-# Uses the modern `current=` parameter instead of the legacy `current_weather=true`.
-# This gives temperature, wind speed, and humidity in a single `current` block.
-DELHI_LAT = 28.6139
-DELHI_LON = 77.2090
-WEATHER_URL = (
-    f"https://api.open-meteo.com/v1/forecast"
-    f"?latitude={DELHI_LAT}&longitude={DELHI_LON}"
-    f"&current=temperature_2m,wind_speed_10m,relative_humidity_2m"
-)
-
-
-def fetch_delhi_weather():
+def fetch_weather(lat: float, lon: float):
     """
-    Fetches the latest weather parameters for Delhi from Open-Meteo.
+    Fetches the latest weather parameters for a given lat/lon from Open-Meteo.
     Returns a dictionary of weather data if successful, or None on failure.
     """
+    WEATHER_URL = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}"
+        f"&current=temperature_2m,wind_speed_10m,relative_humidity_2m"
+    )
+    
     try:
         logger.info(f"Fetching weather data from: {WEATHER_URL}")
         response = requests.get(WEATHER_URL, timeout=15)
 
         logger.info(f"Weather API response status: {response.status_code}")
-        logger.info(f"Weather API response body: {response.text[:500]}")
-
+        
         response.raise_for_status()
         data = response.json()
 

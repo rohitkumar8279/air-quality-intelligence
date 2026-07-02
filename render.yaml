@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: airintel-backend
+    env: python
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: OPEN_METEO_API_URL
+        value: "https://api.open-meteo.com/v1"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false

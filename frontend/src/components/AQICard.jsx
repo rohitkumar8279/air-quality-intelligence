@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Info, Leaf } from 'lucide-react';
 import './AQICard.css';
 
 const AQICard = ({ aqi, pm25, pm10, no2 }) => {
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimated(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const getAQIDetails = (value) => {
     if (value <= 50) return { category: 'Good', color: 'var(--status-good)', text: 'Air quality is satisfactory, and air pollution poses little or no risk.' };
     if (value <= 100) return { category: 'Moderate', color: 'var(--status-good)', text: 'Air quality is acceptable. However, there may be a moderate health concern for a very small number of people who are unusually sensitive to air pollution.' };
@@ -38,12 +45,12 @@ const AQICard = ({ aqi, pm25, pm10, no2 }) => {
               strokeWidth="8" 
               strokeLinecap="round"
               strokeDasharray={strokeDasharray}
-              strokeDashoffset={strokeDashoffset}
+              strokeDashoffset={animated ? strokeDashoffset : strokeDasharray}
               transform="rotate(-90 50 50)"
-              style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
+              style={{ transition: 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
             />
           </svg>
-          <div className="aqi-leaf-icon">
+          <div className="aqi-leaf-icon" style={{ opacity: animated ? 1 : 0, transform: animated ? 'scale(1)' : 'scale(0.5)', transition: 'all 1s cubic-bezier(0.34, 1.56, 0.64, 1)' }}>
             <Leaf size={32} color={color} />
           </div>
         </div>

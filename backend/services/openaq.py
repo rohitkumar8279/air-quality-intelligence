@@ -3,34 +3,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# --- MIGRATION NOTE ---
-# OpenAQ API v2 was retired on January 31, 2025 (returns HTTP 410 Gone).
-# OpenAQ v3 requires an API key.
-# We now use the Open-Meteo Air Quality API instead, which is free and keyless.
-# It provides PM2.5, PM10, NO2, and US AQI for any lat/lon.
-
-# Open-Meteo Air Quality API for Delhi
-DELHI_LAT = 28.6139
-DELHI_LON = 77.2090
-AIR_QUALITY_URL = (
-    f"https://air-quality-api.open-meteo.com/v1/air-quality"
-    f"?latitude={DELHI_LAT}&longitude={DELHI_LON}"
-    f"&current=pm2_5,pm10,nitrogen_dioxide,us_aqi"
-)
-
-
-def fetch_delhi_aqi():
+def fetch_aqi(lat: float, lon: float):
     """
-    Fetches the latest AQI-related parameters for Delhi from Open-Meteo Air Quality API.
+    Fetches the latest AQI-related parameters for a given lat/lon from Open-Meteo Air Quality API.
     Returns a dictionary of pollutants if successful, or None on failure.
     """
+    AIR_QUALITY_URL = (
+        f"https://air-quality-api.open-meteo.com/v1/air-quality"
+        f"?latitude={lat}&longitude={lon}"
+        f"&current=pm2_5,pm10,nitrogen_dioxide,us_aqi"
+    )
+    
     try:
         logger.info(f"Fetching AQI data from: {AIR_QUALITY_URL}")
         response = requests.get(AIR_QUALITY_URL, timeout=15)
 
         logger.info(f"AQI API response status: {response.status_code}")
-        logger.info(f"AQI API response body: {response.text[:500]}")
-
+        
         response.raise_for_status()
         data = response.json()
 
