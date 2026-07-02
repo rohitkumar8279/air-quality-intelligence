@@ -1,0 +1,66 @@
+.pollutants-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.view-details-link {
+  color: var(--accent-primary);
+  font-size: 0.75rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.pollutants-list-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.pollutant-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 70px;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pollutant-label-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.pollutant-bar-bg-v2 {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.pollutant-bar-fill-v2 {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 1s ease;
+}
+
+.pollutant-value-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.pollutant-val-text {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  text-align: right;
+  width: 25px;
+}
+
+.pollutant-unit-text {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  text-align: right;
+}

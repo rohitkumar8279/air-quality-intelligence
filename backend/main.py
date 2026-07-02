@@ -1,6 +1,9 @@
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from datetime import date
+from typing import Optional
 import logging
 
 from backend.database import engine, get_db, Base
@@ -9,6 +12,7 @@ import backend.crud as crud
 import backend.schemas as schemas
 from backend.services.openaq import fetch_delhi_aqi
 from backend.services.weather import fetch_delhi_weather
+import backend.services.prediction as prediction_service
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +27,16 @@ app = FastAPI(
     description="Backend API for managing AQI data and predictions.",
     version="1.0.0"
 )
+
+# Setup CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # For production, specify the exact frontend domain
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.get("/health", tags=["System"])
 def health_check(db: Session = Depends(get_db)):
@@ -82,3 +96,79 @@ def get_current_aqi(db: Session = Depends(get_db)):
         )
         
     return latest_record
+
+
+# --- Phase 5: Historical Data Endpoints ---
+
+@app.get("/api/history", response_model=schemas.HistoryResponse, tags=["Historical Data"])
+def get_history(
+    start_date: Optional[date] = Query(
+        None,
+        description="Start date for filtering (YYYY-MM-DD). Example: 2023-01-01"
+    ),
+    end_date: Optional[date] = Query(
+        None,
+        description="End date for filtering (YYYY-MM-DD). Example: 2023-12-31"
+    ),
+    skip: int = Query(0, ge=0, description="Number of records to skip (for pagination)"),
+    limit: int = Query(500, ge=1, le=5000, description="Maximum number of records to return"),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns historical AQI records for Delhi.
+
+    **Without date filters**: Returns the most recent records (paginated).
+
+    **With date filters**: Returns records within the specified date range.
+
+    Examples:
+    - `GET /api/history` → latest 500 records
+    - `GET /api/history?start_date=2023-01-01&end_date=2023-12-31` → all 2023 records
+    - `GET /api/history?skip=500&limit=500` → second page of results
+    """
+    city = "Delhi"
+
+    # Validate: if one date is provided, both must be provided
+    if (start_date and not end_date) or (end_date and not start_date):
+        raise HTTPException(
+            status_code=400,
+            detail="Both start_date and end_date must be provided for date range filtering."
+        )
+
+    # Validate: start_date must be before end_date
+    if start_date and end_date and start_date > end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="start_date must be before or equal to end_date."
+        )
+
+    if start_date and end_date:
+        records = crud.get_history_by_date_range(db, city, start_date, end_date, skip, limit)
+    else:
+        records = crud.get_history(db, city, skip, limit)
+
+    return schemas.HistoryResponse(count=len(records), records=records)
+
+# --- Phase 7: ML Prediction Endpoint ---
+
+@app.get("/api/predict", response_model=schemas.PredictionResponse, tags=["Prediction"])
+def predict_aqi(db: Session = Depends(get_db)):
+    """
+    Predicts future AQI based on the latest available data for Delhi.
+    """
+    # Verify model is loaded
+    if prediction_service.model is None:
+        raise HTTPException(status_code=500, detail="Prediction model is currently unavailable.")
+        
+    city = "Delhi"
+    latest_record = crud.get_latest_aqi(db, city)
+    
+    if not latest_record:
+        raise HTTPException(status_code=404, detail="No historical data found to base prediction on.")
+        
+    try:
+        prediction_result = prediction_service.generate_prediction(latest_record)
+        return prediction_result
+    except Exception as e:
+        logger.error(f"Prediction failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Prediction generation failed.")

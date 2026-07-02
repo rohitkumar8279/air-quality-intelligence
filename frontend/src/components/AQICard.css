@@ -1,0 +1,78 @@
+.aqi-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-2 {
+  margin-left: 0.5rem;
+}
+
+.aqi-card-content-v2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.aqi-info-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.aqi-number-large {
+  font-size: 4.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.aqi-category-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.aqi-gauge-container-v2 {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aqi-gauge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  filter: drop-shadow(0 0 8px rgba(0,0,0,0.3));
+}
+
+.aqi-leaf-icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-leaf 3s ease-in-out infinite;
+}
+
+@keyframes pulse-leaf {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.aqi-description {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 480px) {
+  .aqi-card-content-v2 {
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
+  }
+}

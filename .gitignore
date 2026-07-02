@@ -25,3 +25,6 @@ dist/
 # ML Models
 *.joblib
 *.pkl
+
+# Datasets (download from Kaggle, not stored in Git)
+datasets/*.csv
