@@ -4,7 +4,7 @@ import { login, register, getCurrentUser } from '../services/authApi';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState({ name: 'Guest User', email: 'guest@airintel.com' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
           console.error("Token invalid or expired", error);
           localStorage.removeItem('token');
+          setUser({ name: 'Guest User', email: 'guest@airintel.com' });
         }
       }
       setLoading(false);
@@ -38,7 +39,7 @@ export const AuthProvider = ({ children }) => {
 
   const logoutUser = () => {
     localStorage.removeItem('token');
-    setUser(null);
+    setUser({ name: 'Guest User', email: 'guest@airintel.com' });
   };
 
   return (
