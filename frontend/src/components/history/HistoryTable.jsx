@@ -57,38 +57,31 @@ const HistoryTable = ({ data }) => {
 
   return (
     <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
-      <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+      <div className="flex flex-col sm:flex-row justify-between items-center p-6 border-b border-[var(--border-light)] gap-4">
+        <div className="relative w-full sm:w-auto">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
           <input 
             type="text" 
             placeholder="Search date or AQI..." 
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            style={{ 
-              background: 'var(--bg-main)', 
-              border: '1px solid var(--border-light)', 
-              color: 'var(--text-primary)',
-              padding: '0.5rem 1rem 0.5rem 2.5rem',
-              borderRadius: '8px',
-              outline: 'none',
-              width: '250px'
-            }}
+            className="bg-[var(--bg-main)] border border-[var(--border-light)] text-[var(--text-primary)] rounded-lg outline-none w-full sm:w-[250px]"
+            style={{ padding: '0.5rem 1rem 0.5rem 2.5rem' }}
           />
         </div>
         
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={exportCSV} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer' }}>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <button onClick={exportCSV} className="btn-secondary flex-1 sm:flex-none justify-center" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <Download size={16} /> CSV
           </button>
-          <button onClick={exportJSON} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer' }}>
+          <button onClick={exportJSON} className="btn-secondary flex-1 sm:flex-none justify-center" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <Download size={16} /> JSON
           </button>
         </div>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+        <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead style={{ background: 'var(--bg-main)', color: 'var(--text-secondary)' }}>
             <tr>
               <th style={{ padding: '1rem 1.5rem', fontWeight: 600 }}>Date & Time</th>
@@ -135,7 +128,7 @@ const HistoryTable = ({ data }) => {
         </table>
       </div>
 
-      <div style={{ padding: '1rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-main)' }}>
+      <div className="flex flex-col sm:flex-row justify-between items-center p-4 sm:px-6 sm:py-4 gap-4 bg-[var(--bg-main)]">
         <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
           Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} records
         </div>

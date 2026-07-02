@@ -13,12 +13,13 @@ import {
   Settings,
   MapPin,
   RefreshCw,
-  Leaf
+  Leaf,
+  X
 } from 'lucide-react';
 import { CityContext } from '../context/CityContext';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, toggleSidebar }) => {
   const { city } = useContext(CityContext);
 
   const menuItems = [
@@ -35,13 +36,22 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <Leaf className="brand-icon" size={24} color="var(--accent-primary)" />
-        <div className="brand-text">
-          <h2>AirIntel</h2>
-          <span>Air Quality Intelligence</span>
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <div className="sidebar-brand flex justify-between items-center w-full pr-4">
+        <div className="flex items-center gap-3">
+          <Leaf className="brand-icon" size={24} color="var(--accent-primary)" />
+          <div className="brand-text">
+            <h2>AirIntel</h2>
+            <span>Air Quality Intelligence</span>
+          </div>
         </div>
+        <button 
+          className="md:hidden text-gray-400 hover:text-white"
+          onClick={toggleSidebar}
+          aria-label="Close Sidebar"
+        >
+          <X size={24} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -52,6 +62,11 @@ const Sidebar = () => {
                 to={item.path} 
                 className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', width: '100%', gap: '1rem', color: 'inherit' }}
+                onClick={() => {
+                  if (window.innerWidth < 768) {
+                    toggleSidebar();
+                  }
+                }}
               >
                 <div className="nav-icon">{item.icon}</div>
                 <span>{item.label}</span>

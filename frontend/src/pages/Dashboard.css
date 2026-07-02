@@ -224,6 +224,26 @@
   }
 }
 
+@media (max-width: 1024px) {
+  .hero-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+  
+  .hero-health-card {
+    width: 100%;
+  }
+  
+  .weather-cards-row {
+    flex-wrap: wrap;
+  }
+  
+  .w-card {
+    flex: 1 1 calc(50% - 1rem);
+  }
+}
+
 @media (max-width: 768px) {
   .grid-row-3 {
     grid-template-columns: 1fr;
@@ -239,5 +259,11 @@
   }
   .banner-icon-bg {
     margin-right: 0;
+  }
+  .hero-main-title {
+    font-size: 2rem;
+  }
+  .w-card {
+    flex: 1 1 100%;
   }
 }

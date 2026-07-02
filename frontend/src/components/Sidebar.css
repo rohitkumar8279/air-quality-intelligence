@@ -107,10 +107,14 @@
   box-shadow: 0 0 8px var(--accent-primary);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .sidebar {
     position: fixed;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
   }
 }

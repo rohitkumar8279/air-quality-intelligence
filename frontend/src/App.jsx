@@ -19,6 +19,7 @@ import Profile from './pages/Profile';
 
 function App() {
   const location = useLocation();
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   if (isAuthPage) {
@@ -30,11 +31,22 @@ function App() {
     );
   }
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
     <div className="app-container">
-      <Sidebar />
+      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/50 z-40" 
+          onClick={toggleSidebar}
+        />
+      )}
       <main className="main-content">
-        <Navbar />
+        <Navbar toggleSidebar={toggleSidebar} />
         <div className="page-content">
           <Routes>
             <Route element={<PrivateRoute />}>

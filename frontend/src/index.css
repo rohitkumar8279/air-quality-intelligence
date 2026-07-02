@@ -62,9 +62,15 @@ body {
 }
 
 .page-content {
-  padding: 6rem 2rem 2rem 2rem;
+  padding: 5rem 1rem 1rem 1rem;
   overflow-y: auto;
   height: 100%;
+}
+
+@media (min-width: 768px) {
+  .page-content {
+    padding: 6rem 2rem 2rem 2rem;
+  }
 }
 
 /* Glassmorphism Premium Cards */
@@ -355,4 +361,22 @@ body {
   background-color: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.1);
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Accessibility & Touch Targets (Mobile) */
+@media (max-width: 768px) {
+  button, 
+  .btn-primary, 
+  .btn-secondary, 
+  .icon-btn,
+  .map-control-btn,
+  .map-toggle-btn,
+  .filter-btn,
+  .nav-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }

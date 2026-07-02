@@ -461,3 +461,23 @@
 [data-theme='light'] .details-view-btn:hover {
   background: rgba(0, 0, 0, 0.08);
 }
+
+@media (max-width: 768px) {
+  .advanced-map-container {
+    height: 400px;
+  }
+  .map-top-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .pollutant-filters {
+    overflow-x: auto;
+    width: 100%;
+  }
+  .map-scale-legend {
+    display: none;
+  }
+  .map-details-sidebar {
+    width: calc(100% - 40px);
+  }
+}

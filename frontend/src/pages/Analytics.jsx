@@ -125,7 +125,7 @@ const Analytics = () => {
       <AnalyticsFilters filters={filters} setFilters={setFilters} />
 
       {/* Top Statistics */}
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginBottom: '1.5rem' }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <StatisticCard 
           title="Average AQI" 
           value={stats.avg} 
@@ -158,13 +158,13 @@ const Analytics = () => {
       </div>
 
       {/* Main Charts */}
-      <div className="grid" style={{ gridTemplateColumns: '1fr', marginBottom: '1.5rem' }}>
+      <div className="grid grid-cols-1 gap-6 mb-6">
         <ChartContainer title="Historical AQI Trend" delay={5}>
           <AQILineChart data={filteredHistory} />
         </ChartContainer>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', marginBottom: '1.5rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <ChartContainer title="Pollutant Breakdown" delay={6}>
           <PollutantChart data={filteredHistory} />
         </ChartContainer>
@@ -174,7 +174,7 @@ const Analytics = () => {
         </ChartContainer>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', marginBottom: '1.5rem' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <ChartContainer title="AQI Forecast" delay={8}>
           <PredictionChart predictionData={predictionData} />
         </ChartContainer>
