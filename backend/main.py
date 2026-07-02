@@ -37,11 +37,22 @@ app.include_router(users.router)
 import os
 
 # Setup CORS
-cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
+# Provide sensible defaults for local development and known frontend domains if env var is missing
+default_origins = "http://localhost:5173,http://localhost:3000,https://air-quality-intelligence-psi.vercel.app"
+raw_origins = os.getenv("CORS_ORIGINS", default_origins)
 
+# Clean up origins: split by comma, remove whitespace, and strip trailing slashes
+cors_origins = [
+    origin.strip().rstrip("/") 
+    for origin in raw_origins.split(",") 
+    if origin.strip()
+]
+
+# Add Vercel wildcard regex just in case for preview deployments
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=cors_origins if "*" not in cors_origins else ["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app" if "*" not in cors_origins else None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
