@@ -52,13 +52,14 @@ def generate_insights(current_record, previous_record=None) -> dict:
             trend = "Decreasing"
             summary = "Air quality has improved compared to yesterday."
             
-    weather_effect = "Normal conditions."
-    if getattr(current_record, 'wind_speed', 0) < 5:
+    wind_speed = getattr(current_record, 'wind_speed', None) or 0
+    if wind_speed < 5:
         weather_effect = "Low wind speed is allowing pollutants to accumulate."
-    elif getattr(current_record, 'wind_speed', 0) > 15:
+    elif wind_speed > 15:
         weather_effect = "High wind speed is helping disperse pollution."
         
-    if getattr(current_record, 'humidity', 0) > 80:
+    humidity = getattr(current_record, 'humidity', None) or 0
+    if humidity > 80:
         weather_effect = "High humidity is increasing pollution retention."
 
     recommendation = "Normal outdoor activities are fine."
@@ -81,19 +82,19 @@ def generate_prediction_explanation(record, prediction: float) -> dict:
         
     explanations = []
     
-    pm10 = getattr(record, 'pm10', 0)
+    pm10 = getattr(record, 'pm10', None) or 0
     if pm10 > 150:
         explanations.append("High PM10 levels strongly increase predicted AQI.")
     elif pm10 > 80:
         explanations.append("Moderate PM10 levels contribute to the prediction.")
         
-    wind = getattr(record, 'wind_speed', 0)
+    wind = getattr(record, 'wind_speed', None) or 0
     if wind < 5:
         explanations.append("Low wind speed prevents pollutant dispersion.")
     elif wind > 15:
         explanations.append("High wind speed reduces expected pollution.")
         
-    temp = getattr(record, 'temperature', 0)
+    temp = getattr(record, 'temperature', None) or 0
     if temp > 35:
         explanations.append("High temperatures may increase ozone formation.")
         
@@ -122,8 +123,10 @@ def generate_daily_summary(current_record, predicted_aqi: float) -> dict:
         recs = ["Reduce prolonged outdoor exertion.", "Keep windows closed during peak traffic."]
         
     weather = "Clear"
-    if getattr(current_record, 'humidity', 0) > 80: weather = "Humid"
-    if getattr(current_record, 'wind_speed', 0) > 20: weather = "Windy"
+    humidity = getattr(current_record, 'humidity', None) or 0
+    wind_speed = getattr(current_record, 'wind_speed', None) or 0
+    if humidity > 80: weather = "Humid"
+    if wind_speed > 20: weather = "Windy"
     
     return {
         "current_aqi": aqi,
@@ -234,19 +237,19 @@ def generate_weather_impact(record) -> dict:
     
     insights = []
     
-    hum = getattr(record, 'humidity', 0)
+    hum = getattr(record, 'humidity', None) or 0
     if hum > 70:
         insights.append("High humidity is increasing pollutant retention.")
     else:
         insights.append("Low humidity is aiding in pollutant dispersion.")
         
-    wind = getattr(record, 'wind_speed', 0)
+    wind = getattr(record, 'wind_speed', None) or 0
     if wind < 5:
         insights.append("Low wind speed is causing pollutants to stagnate.")
     else:
         insights.append("High wind speed is actively dispersing pollution.")
         
-    temp = getattr(record, 'temperature', 0)
+    temp = getattr(record, 'temperature', None) or 0
     if temp > 35:
         insights.append("High temperature is increasing ground-level ozone formation.")
         
