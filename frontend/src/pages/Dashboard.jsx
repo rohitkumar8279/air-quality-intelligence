@@ -82,28 +82,28 @@ const Dashboard = () => {
               <div className="w-card">
                 <Sun size={24} color="#FBBF24" />
                 <div className="w-data">
-                  <strong>{data.temperature}°C</strong>
+                  <strong>{data.temperature !== null && data.temperature !== undefined ? `${data.temperature}°C` : '--'}</strong>
                   <span>Clear Sky</span>
                 </div>
               </div>
               <div className="w-card">
                 <Droplets size={24} color="var(--accent-cyan)" />
                 <div className="w-data">
-                  <strong>{data.humidity}%</strong>
+                  <strong>{data.humidity !== null && data.humidity !== undefined ? `${data.humidity}%` : '--'}</strong>
                   <span>Humidity</span>
                 </div>
               </div>
               <div className="w-card">
                 <Wind size={24} color="var(--accent-cyan)" />
                 <div className="w-data">
-                  <strong>{data.wind_speed} km/h</strong>
+                  <strong>{data.wind_speed !== null && data.wind_speed !== undefined ? `${data.wind_speed} km/h` : '--'}</strong>
                   <span>Wind Speed</span>
                 </div>
               </div>
               <div className="w-card">
                 <Compass size={24} color="var(--text-secondary)" />
                 <div className="w-data">
-                  <strong>WSW</strong>
+                  <strong>--</strong>
                   <span>Wind Direction</span>
                 </div>
               </div>
