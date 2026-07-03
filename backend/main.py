@@ -60,6 +60,9 @@ app.add_middleware(
 
 # Trigger auto-reload to load new bcrypt version
 
+@app.get("/", tags=["System"])
+def root():
+    return {"message": "Welcome to the Urban Air Quality Intelligence API", "docs": "/docs", "health": "/health"}
 
 @app.get("/health", tags=["System"])
 def health_check(db: Session = Depends(get_db)):
