@@ -93,17 +93,18 @@ def get_current_aqi(city: str = Query("Delhi", description="Name of the city"), 
         aqi_data = None
         weather_data = None
     
-    if aqi_data and weather_data:
+    if aqi_data:
         # 2. Parse and combine data
+        weather_dict = weather_data or {}
         record_in = schemas.AQIRecordCreate(
             city=city,
             aqi=aqi_data.get("aqi", 0),
             pm25=aqi_data.get("pm25"),
             pm10=aqi_data.get("pm10"),
             no2=aqi_data.get("no2"),
-            temperature=weather_data.get("temperature"),
-            humidity=weather_data.get("humidity"),
-            wind_speed=weather_data.get("wind_speed")
+            temperature=weather_dict.get("temperature"),
+            humidity=weather_dict.get("humidity"),
+            wind_speed=weather_dict.get("wind_speed")
         )
         
         # 3. Store in PostgreSQL
