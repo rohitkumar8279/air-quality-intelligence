@@ -16,6 +16,7 @@ import AIInsights from './pages/AIInsights';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import ServerWakeupToast from './components/ServerWakeupToast';
 
 function App() {
   const location = useLocation();
@@ -65,6 +66,7 @@ function App() {
           </Routes>
         </div>
       </main>
+      <ServerWakeupToast />
     </div>
   );
 }

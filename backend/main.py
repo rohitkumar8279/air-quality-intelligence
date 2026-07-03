@@ -85,8 +85,13 @@ def get_current_aqi(city: str = Query("Delhi", description="Name of the city"), 
         raise HTTPException(status_code=400, detail=f"City '{city}' is not supported.")
         
     # 1. Fetch from external APIs
-    aqi_data = fetch_aqi(config["lat"], config["lon"])
-    weather_data = fetch_weather(config["lat"], config["lon"])
+    try:
+        aqi_data = fetch_aqi(config["lat"], config["lon"])
+        weather_data = fetch_weather(config["lat"], config["lon"])
+    except Exception as e:
+        logger.error(f"External API fetch failed for {city}: {str(e)}")
+        aqi_data = None
+        weather_data = None
     
     if aqi_data and weather_data:
         # 2. Parse and combine data
@@ -208,41 +213,65 @@ import backend.services.insights as insights_service
 
 @app.get("/api/insights", tags=["AI Insights"])
 def get_ai_insights(city: str = Query("Delhi"), db: Session = Depends(get_db)):
-    latest_record = crud.get_latest_aqi(db, city)
-    history = crud.get_history(db, city, skip=1, limit=1)
-    previous_record = history[0] if history else None
-    return insights_service.generate_insights(latest_record, previous_record)
+    try:
+        latest_record = crud.get_latest_aqi(db, city)
+        history = crud.get_history(db, city, skip=1, limit=1)
+        previous_record = history[0] if history else None
+        return insights_service.generate_insights(latest_record, previous_record)
+    except Exception as e:
+        logger.error(f"Failed to generate AI insights for {city}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate AI insights.")
 
 @app.get("/api/prediction/explanation", tags=["AI Insights"])
 def get_prediction_explanation(city: str = Query("Delhi"), db: Session = Depends(get_db)):
     if prediction_service.model is None:
         raise HTTPException(status_code=500, detail="Model unavailable.")
-    latest_record = crud.get_latest_aqi(db, city)
-    pred_result = prediction_service.generate_prediction(latest_record)
-    return insights_service.generate_prediction_explanation(latest_record, pred_result["predicted_aqi"])
+    try:
+        latest_record = crud.get_latest_aqi(db, city)
+        pred_result = prediction_service.generate_prediction(latest_record)
+        return insights_service.generate_prediction_explanation(latest_record, pred_result["predicted_aqi"])
+    except Exception as e:
+        logger.error(f"Failed to generate prediction explanation for {city}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate prediction explanation.")
 
 @app.get("/api/daily-summary", tags=["AI Insights"])
 def get_daily_summary(city: str = Query("Delhi"), db: Session = Depends(get_db)):
-    latest_record = crud.get_latest_aqi(db, city)
-    pred_result = prediction_service.generate_prediction(latest_record)
-    predicted_aqi = pred_result["predicted_aqi"] if pred_result else getattr(latest_record, 'aqi', 0)
-    return insights_service.generate_daily_summary(latest_record, predicted_aqi)
+    try:
+        latest_record = crud.get_latest_aqi(db, city)
+        pred_result = prediction_service.generate_prediction(latest_record)
+        predicted_aqi = pred_result["predicted_aqi"] if pred_result else getattr(latest_record, 'aqi', 0)
+        return insights_service.generate_daily_summary(latest_record, predicted_aqi)
+    except Exception as e:
+        logger.error(f"Failed to generate daily summary for {city}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate daily summary.")
 
 @app.get("/api/health-advice", tags=["AI Insights"])
 def get_health_advice(city: str = Query("Delhi"), db: Session = Depends(get_db)):
-    latest_record = crud.get_latest_aqi(db, city)
-    aqi = latest_record.aqi if latest_record else 0
-    return insights_service.generate_health_advice(aqi)
+    try:
+        latest_record = crud.get_latest_aqi(db, city)
+        aqi = latest_record.aqi if latest_record else 0
+        return insights_service.generate_health_advice(aqi)
+    except Exception as e:
+        logger.error(f"Failed to generate health advice for {city}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate health advice.")
 
 @app.get("/api/pollution-analysis", tags=["AI Insights"])
 def get_pollution_analysis(city: str = Query("Delhi"), db: Session = Depends(get_db)):
-    latest_record = crud.get_latest_aqi(db, city)
-    return insights_service.generate_pollution_analysis(latest_record)
+    try:
+        latest_record = crud.get_latest_aqi(db, city)
+        return insights_service.generate_pollution_analysis(latest_record)
+    except Exception as e:
+        logger.error(f"Failed to generate pollution analysis for {city}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate pollution analysis.")
 
 @app.get("/api/weather-impact", tags=["AI Insights"])
 def get_weather_impact(city: str = Query("Delhi"), db: Session = Depends(get_db)):
-    latest_record = crud.get_latest_aqi(db, city)
-    return insights_service.generate_weather_impact(latest_record)
+    try:
+        latest_record = crud.get_latest_aqi(db, city)
+        return insights_service.generate_weather_impact(latest_record)
+    except Exception as e:
+        logger.error(f"Failed to generate weather impact for {city}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate weather impact.")
 
 @app.get("/api/feature-importance", tags=["AI Insights"])
 def get_feature_importance():

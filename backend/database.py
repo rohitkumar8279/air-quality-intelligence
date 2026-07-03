@@ -11,7 +11,11 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Create the SQLAlchemy Engine
 # The engine is responsible for maintaining connections to the PostgreSQL database.
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
 
 # Create a SessionLocal class
 # Each instance of this class will be a database session.

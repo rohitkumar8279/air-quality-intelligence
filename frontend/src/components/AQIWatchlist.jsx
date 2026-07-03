@@ -59,7 +59,8 @@ const AQIWatchlist = () => {
   const [newCity, setNewCity] = useState('');
 
   const fetchFavorites = () => {
-    if (user) {
+    const token = localStorage.getItem('token');
+    if (user && token && user.name !== 'Guest User') {
       getFavoriteCities().then(data => {
         if (data && data.length > 0) {
           setFavorites(data.map(d => d.city_name));
@@ -67,6 +68,8 @@ const AQIWatchlist = () => {
           setFavorites(['Mumbai', 'Bangalore']);
         }
       }).catch(console.error);
+    } else {
+      setFavorites(['Mumbai', 'Bangalore']);
     }
   };
 
