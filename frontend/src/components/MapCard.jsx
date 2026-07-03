@@ -68,7 +68,7 @@ const MapCard = ({ aqi }) => {
               attribution='&copy; <a href="https://carto.com/">CartoDB</a>'
               url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
-            <ZoomControl position="bottomright" />
+            <ZoomControl position="topright" />
             
             {cities.map((city, idx) => (
               <Marker key={idx} position={city.pos} icon={createCustomIcon(city.value, city.name)}>

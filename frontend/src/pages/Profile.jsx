@@ -6,12 +6,12 @@ import { User, Mail, Calendar, Activity, Settings, LogOut, FileText, Plus, MapPi
 import { useNavigate } from 'react-router-dom';
 
 const cardStyle = {
-  background: 'rgba(15, 23, 42, 0.6)',
+  background: 'var(--bg-card)',
   backdropFilter: 'blur(12px)',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
+  border: '1px solid var(--border-light)',
   borderRadius: '20px',
   padding: '2rem',
-  boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+  boxShadow: 'var(--shadow-soft)'
 };
 
 const Profile = () => {
@@ -121,9 +121,9 @@ const Profile = () => {
             </div>
             
             <div style={{ 
-              border: '2px dashed rgba(255, 255, 255, 0.1)', borderRadius: '16px', padding: '4rem 2rem', 
+              border: '2px dashed var(--border-light)', borderRadius: '16px', padding: '4rem 2rem', 
               textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center',
-              background: 'rgba(0,0,0,0.1)'
+              background: 'transparent'
             }}>
               <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.03)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
                 <FileText size={40} color="var(--text-secondary)" opacity={0.5} />
@@ -143,10 +143,10 @@ const Profile = () => {
             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>Recent Activity</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'relative' }}>
               {/* Vertical Line */}
-              <div style={{ position: 'absolute', left: '15px', top: '20px', bottom: '20px', width: '2px', background: 'rgba(255,255,255,0.05)' }}></div>
+              <div style={{ position: 'absolute', left: '15px', top: '20px', bottom: '20px', width: '2px', background: 'var(--border-light)' }}></div>
               
               <div style={{ display: 'flex', gap: '1.5rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1e293b', border: '2px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card)', border: '2px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
                   <User size={14} />
                 </div>
                 <div>
@@ -158,7 +158,7 @@ const Profile = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '1.5rem', position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1e293b', border: '2px solid var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)' }}>
+                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card)', border: '2px solid var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)' }}>
                   <Settings size={14} />
                 </div>
                 <div>

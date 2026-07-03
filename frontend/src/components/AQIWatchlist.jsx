@@ -76,13 +76,17 @@ const AQIWatchlist = () => {
 
   const handleAddCity = async () => {
     if (!newCity) return;
+    const addedCity = newCity;
+    
+    // Optimistic UI update
+    setFavorites(prev => [...prev, addedCity]);
+    setIsAdding(false);
+    setNewCity('');
+
     try {
-      await addFavoriteCity(newCity);
-      fetchFavorites();
-      setIsAdding(false);
-      setNewCity('');
+      await addFavoriteCity(addedCity);
     } catch (err) {
-      console.error("Failed to add city", err);
+      console.error("Failed to add city to backend", err);
     }
   };
 
