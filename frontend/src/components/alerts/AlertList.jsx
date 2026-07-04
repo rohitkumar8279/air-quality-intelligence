@@ -1,49 +1,187 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, AlertTriangle, Info, CheckCircle2, XCircle, Clock, Trash2, CheckSquare } from 'lucide-react';
-
-const mockAlerts = [
-  { id: 1, type: 'Danger', priority: 'High', title: 'Severe AQI Warning', description: 'AQI has crossed 300 in your primary location. Avoid outdoor activities.', time: new Date(Date.now() - 1000 * 60 * 30).toISOString(), read: false },
-  { id: 2, type: 'Weather', priority: 'Medium', title: 'Heavy Rain Expected', description: 'Precipitation chance is 90% for the next 3 hours. Carry an umbrella.', time: new Date(Date.now() - 1000 * 60 * 120).toISOString(), read: false },
-  { id: 3, type: 'Prediction', priority: 'Low', title: 'AQI Improvement', description: 'Model predicts AQI will drop to Moderate levels by tomorrow evening.', time: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), read: true },
-  { id: 4, type: 'System', priority: 'Low', title: 'System Maintenance', description: 'Scheduled maintenance for backend APIs at 2 AM UTC.', time: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), read: true },
-  { id: 5, type: 'Warning', priority: 'High', title: 'High PM2.5 Levels', description: 'PM2.5 concentration is 4x the WHO safe limit.', time: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), read: true }
-];
+import { CityContext } from '../../context/CityContext';
+import { fetchCurrentData } from '../../services/api';
+import { getPrediction } from '../../services/predictionApi';
 
 const AlertList = () => {
+  const { city } = useContext(CityContext);
   const [alerts, setAlerts] = useState([]);
   const [filter, setFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('user_alerts');
-    if (saved) {
-      setAlerts(JSON.parse(saved));
-    } else {
-      setAlerts(mockAlerts);
-      localStorage.setItem('user_alerts', JSON.stringify(mockAlerts));
+    const fetchDynamicAlerts = async () => {
+      if (!city) return;
+      setLoading(true);
+      
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const newAlerts = [];
+        
+        // Fetch live data
+        let currentData = null;
+        try {
+           currentData = await fetchCurrentData(city);
+        } catch (e) {
+           console.error("Could not fetch current data for alerts", e);
+        }
+        
+        let predictionData = null;
+        try {
+           predictionData = await getPrediction(city);
+        } catch (e) {
+           console.error("Could not fetch prediction for alerts", e);
+        }
+
+        // 1. AQI Danger Alert
+        if (currentData && currentData.aqi > 200) {
+          newAlerts.push({
+            id: `danger-aqi-${city}-${today}`,
+            type: 'Danger',
+            priority: 'High',
+            title: `Severe AQI Warning in ${city}`,
+            description: `AQI has crossed 200. It is currently at ${Math.round(currentData.aqi)}. Please avoid outdoor activities.`,
+            time: new Date().toISOString(),
+            read: false
+          });
+        }
+        
+        // 2. PM2.5 Warning
+        if (currentData && currentData.pm25 > 60) {
+          newAlerts.push({
+            id: `warning-pm25-${city}-${today}`,
+            type: 'Warning',
+            priority: 'High',
+            title: `High PM2.5 Levels in ${city}`,
+            description: `PM2.5 concentration is ${Math.round(currentData.pm25)} µg/m³, exceeding safe limits.`,
+            time: new Date().toISOString(),
+            read: false
+          });
+        }
+
+        // 3. High Humidity / Weather Warning
+        if (currentData && currentData.humidity > 85) {
+          newAlerts.push({
+            id: `weather-humidity-${city}-${today}`,
+            type: 'Weather',
+            priority: 'Medium',
+            title: `High Humidity Expected`,
+            description: `Humidity is extremely high at ${currentData.humidity}%. Conditions may feel uncomfortable.`,
+            time: new Date().toISOString(),
+            read: false
+          });
+        }
+
+        // 4. Prediction Alerts
+        if (predictionData) {
+          if (predictionData.status === 'Improving') {
+            newAlerts.push({
+              id: `prediction-improving-${city}-${today}`,
+              type: 'Prediction',
+              priority: 'Low',
+              title: `AQI Improvement Expected`,
+              description: `AI models predict air quality in ${city} will improve to ${Math.round(predictionData.predicted_aqi)} soon.`,
+              time: new Date().toISOString(),
+              read: false
+            });
+          } else if (predictionData.status === 'Worsening') {
+            newAlerts.push({
+              id: `prediction-worsening-${city}-${today}`,
+              type: 'Warning',
+              priority: 'High',
+              title: `Deteriorating Air Quality`,
+              description: `AI predicts AQI will worsen to ${Math.round(predictionData.predicted_aqi)} in ${city}. Prepare accordingly.`,
+              time: new Date().toISOString(),
+              read: false
+            });
+          }
+        }
+        
+        // Add a system welcome alert if nothing else triggers
+        if (newAlerts.length === 0) {
+           newAlerts.push({
+              id: `system-welcome-${city}-${today}`,
+              type: 'System',
+              priority: 'Low',
+              title: 'System Active',
+              description: `Live monitoring active for ${city}. Air quality is currently within normal parameters.`,
+              time: new Date().toISOString(),
+              read: false
+           });
+        }
+
+        // Merge with locally stored states (so dismissed alerts stay dismissed)
+        const saved = localStorage.getItem('user_alerts_state');
+        const alertStates = saved ? JSON.parse(saved) : {};
+        
+        const mergedAlerts = newAlerts.filter(a => {
+           // If deleted, remove entirely
+           if (alertStates[a.id]?.deleted) return false;
+           
+           // Apply read state
+           if (alertStates[a.id]?.read) {
+             a.read = true;
+           }
+           return true;
+        });
+        
+        setAlerts(mergedAlerts);
+
+      } catch (err) {
+        console.error("Error generating dynamic alerts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDynamicAlerts();
+    const interval = setInterval(fetchDynamicAlerts, 5 * 60 * 1000); // refresh every 5 mins
+    return () => clearInterval(interval);
+  }, [city]);
+
+  const updateAlertState = (id, updates) => {
+    const saved = localStorage.getItem('user_alerts_state');
+    const alertStates = saved ? JSON.parse(saved) : {};
+    
+    alertStates[id] = { ...alertStates[id], ...updates };
+    localStorage.setItem('user_alerts_state', JSON.stringify(alertStates));
+    
+    if (updates.deleted) {
+       setAlerts(alerts.filter(a => a.id !== id));
+    } else if (updates.read) {
+       setAlerts(alerts.map(a => a.id === id ? { ...a, read: true } : a));
     }
-  }, []);
-
-  const saveAlerts = (newAlerts) => {
-    setAlerts(newAlerts);
-    localStorage.setItem('user_alerts', JSON.stringify(newAlerts));
   };
 
-  const markAsRead = (id) => {
-    saveAlerts(alerts.map(a => a.id === id ? { ...a, read: true } : a));
-  };
+  const markAsRead = (id) => updateAlertState(id, { read: true });
+  const deleteAlert = (id) => updateAlertState(id, { deleted: true });
 
   const markAllRead = () => {
-    saveAlerts(alerts.map(a => ({ ...a, read: true })));
-  };
-
-  const deleteAlert = (id) => {
-    saveAlerts(alerts.filter(a => a.id !== id));
+    const saved = localStorage.getItem('user_alerts_state');
+    const alertStates = saved ? JSON.parse(saved) : {};
+    
+    const newAlerts = alerts.map(a => {
+       alertStates[a.id] = { ...alertStates[a.id], read: true };
+       return { ...a, read: true };
+    });
+    
+    localStorage.setItem('user_alerts_state', JSON.stringify(alertStates));
+    setAlerts(newAlerts);
   };
 
   const clearAll = () => {
-    if (window.confirm("Are you sure you want to clear all alerts?")) {
-      saveAlerts([]);
+    if (window.confirm("Are you sure you want to clear all current alerts?")) {
+      const saved = localStorage.getItem('user_alerts_state');
+      const alertStates = saved ? JSON.parse(saved) : {};
+      
+      alerts.forEach(a => {
+         alertStates[a.id] = { ...alertStates[a.id], deleted: true };
+      });
+      
+      localStorage.setItem('user_alerts_state', JSON.stringify(alertStates));
+      setAlerts([]);
     }
   };
 
@@ -60,13 +198,22 @@ const AlertList = () => {
       case 'Warning': return <AlertTriangle color="#F59E0B" />;
       case 'System': return <Info color="#3B82F6" />;
       case 'Prediction': return <CheckCircle2 color="#10B981" />;
+      case 'Weather': return <Info color="#06b6d4" />;
       default: return <Bell color="var(--text-secondary)" />;
     }
   };
 
+  if (loading) {
+     return (
+        <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
+           <span className="loader" style={{ width: '30px', height: '30px', borderWidth: '3px', margin: '0 auto' }}></span>
+           <p className="text-muted" style={{ marginTop: '1rem' }}>Generating live intelligence alerts...</p>
+        </div>
+     );
+  }
+
   return (
     <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
-      
       <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {['All', 'Unread', 'High Priority'].map(f => (
@@ -89,9 +236,6 @@ const AlertList = () => {
         </div>
         
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => saveAlerts(mockAlerts)} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer' }}>
-            <Bell size={16} /> Restore Defaults
-          </button>
           <button onClick={markAllRead} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', background: 'var(--bg-main)', border: '1px solid var(--border-light)', borderRadius: '6px', color: 'var(--text-primary)', cursor: 'pointer' }}>
             <CheckSquare size={16} /> Mark all read
           </button>
@@ -106,7 +250,7 @@ const AlertList = () => {
           {filteredAlerts.length === 0 && (
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                <Bell size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-               <p>No alerts to display.</p>
+               <p>No active alerts for {city}.</p>
              </motion.div>
           )}
 
@@ -135,7 +279,7 @@ const AlertList = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
                   <h4 style={{ margin: 0, fontSize: '1rem', color: alert.read ? 'var(--text-secondary)' : 'var(--text-primary)' }}>{alert.title}</h4>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                    <Clock size={12} /> {new Date(alert.time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    <Clock size={12} /> {new Date(alert.time).toLocaleString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
                 <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{alert.description}</p>
