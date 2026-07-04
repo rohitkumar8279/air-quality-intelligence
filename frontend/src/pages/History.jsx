@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Database } from 'lucide-react';
+import { CityContext } from '../context/CityContext';
 import { getHistoryData } from '../services/analyticsApi';
 
 import HistoryTable from '../components/history/HistoryTable';
@@ -8,6 +9,7 @@ import ChartContainer from '../components/analytics/ChartContainer';
 import { AQITrendChart } from '../components/air-quality/AirQualityCharts';
 
 const History = () => {
+  const { city } = useContext(CityContext);
   const [loading, setLoading] = useState(true);
   const [historyData, setHistoryData] = useState([]);
 
@@ -15,7 +17,7 @@ const History = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const hist = await getHistoryData({ limit: 500 });
+        const hist = await getHistoryData({ limit: 500, city });
         setHistoryData(hist.records || []);
       } catch (error) {
         console.error("Failed to load history data", error);
@@ -24,7 +26,7 @@ const History = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [city]);
 
   return (
     <motion.div 

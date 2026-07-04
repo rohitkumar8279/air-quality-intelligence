@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
-import { Wind, BarChart2 } from 'lucide-react';
+import { Wind } from 'lucide-react';
+import { CityContext } from '../context/CityContext';
 import { getCurrentData, getHistoryData } from '../services/analyticsApi';
 
 import AQILargeCard from '../components/air-quality/AQILargeCard';
@@ -10,6 +11,7 @@ import PollutionSummary from '../components/air-quality/PollutionSummary';
 import ChartContainer from '../components/analytics/ChartContainer';
 
 const AirQuality = () => {
+  const { city } = useContext(CityContext);
   const [loading, setLoading] = useState(true);
   const [currentData, setCurrentData] = useState(null);
   const [historyData, setHistoryData] = useState([]);
@@ -19,8 +21,8 @@ const AirQuality = () => {
       setLoading(true);
       try {
         const [curr, hist] = await Promise.all([
-          getCurrentData(),
-          getHistoryData({ limit: 168 }) // Last 7 days roughly
+          getCurrentData(city),
+          getHistoryData({ limit: 168, city }) // Last 7 days roughly
         ]);
         setCurrentData(curr);
         setHistoryData(hist.records || []);
@@ -31,7 +33,7 @@ const AirQuality = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [city]);
 
   if (loading) {
     return (
