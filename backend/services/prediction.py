@@ -8,13 +8,13 @@ import backend.models as models
 logger = logging.getLogger(__name__)
 
 # Construct the absolute path to the model file
-MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ml", "model.json")
+MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ml", "model.pkl")
 
 # Load the model only once when this module is imported (at server startup)
 model = None
 try:
-    model = xgb.XGBRegressor()
-    model.load_model(MODEL_PATH)
+    import joblib
+    model = joblib.load(MODEL_PATH)
     logger.info("Model loaded successfully")
 except Exception as e:
     logger.error(f"Prediction failed to load model: {str(e)}")
@@ -28,17 +28,11 @@ def generate_prediction(record: models.AQIRecord) -> dict:
         
     try:
         # Extract the exact feature columns used during model training
-        timestamp = record.timestamp or datetime.utcnow()
         features_dict = {
-            'PM2.5': [record.pm25 if record.pm25 is not None else 0.0],
-            'PM10': [record.pm10 if record.pm10 is not None else 0.0],
-            'NO2': [record.no2 if record.no2 is not None else 0.0],
-            'SO2': [0.0],
-            'CO': [0.0],
-            'Year': [timestamp.year],
-            'Month': [timestamp.month],
-            'Day': [timestamp.day],
-            'Weekday': [timestamp.weekday()]
+            'aqi': [record.aqi if record.aqi is not None else 0.0],
+            'temperature': [record.temperature if record.temperature is not None else 25.0],
+            'humidity': [record.humidity if record.humidity is not None else 60.0],
+            'wind_speed': [record.wind_speed if record.wind_speed is not None else 5.0]
         }
         features_df = pd.DataFrame(features_dict)
         

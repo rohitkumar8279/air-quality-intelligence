@@ -39,6 +39,16 @@ class PredictionResponse(BaseModel):
     prediction_time: datetime
     status: str
 
+class ForecastCreate(BaseModel):
+    city: str
+    forecast_date: datetime
+    predicted_aqi: float
+
+class AdvisoryCreate(BaseModel):
+    city: str
+    aqi_level: str
+    health_advice: str
+
 # --- Phase 12: Auth & Users ---
 
 class Token(BaseModel):
