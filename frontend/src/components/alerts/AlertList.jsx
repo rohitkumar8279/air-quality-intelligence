@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, AlertTriangle, Info, CheckCircle2, XCircle, Clock, Trash2, CheckSquare, Sparkles } from 'lucide-react';
+import { Bell, AlertTriangle, Info, CheckCircle2, XCircle, Clock, Trash2, CheckSquare, Sparkles, TrendingUp, TrendingDown, Activity, HeartPulse } from 'lucide-react';
 import { CityContext } from '../../context/CityContext';
 import { AuthContext } from '../../context/AuthContext';
 import { fetchCurrentData } from '../../services/api';
 import { getPrediction } from '../../services/predictionApi';
 import { getFavoriteCities } from '../../services/authApi';
+import { getHistoryData } from '../../services/analyticsApi';
+import { generateAlerts } from '../../services/alertEngine';
 
 const AlertList = () => {
   const { city } = useContext(CityContext);
@@ -31,18 +33,16 @@ const AlertList = () => {
            }
         }
 
-        // Ensure current city is always included
         if (city && !targetCities.includes(city)) {
            targetCities.unshift(city);
         }
 
-        const today = new Date().toISOString().split('T')[0];
-        const newAlerts = [];
+        let allGeneratedAlerts = [];
 
-        // Fetch data for all target cities in parallel
         await Promise.all(targetCities.map(async (targetCity) => {
            let currentData = null;
            let predictionData = null;
+           let historyData = [];
 
            try {
               currentData = await fetchCurrentData(targetCity);
@@ -52,155 +52,42 @@ const AlertList = () => {
               predictionData = await getPrediction(targetCity);
            } catch (e) { /* ignore */ }
 
-           // 1. AQI Danger Alert
-           if (currentData && currentData.aqi > 200) {
-             newAlerts.push({
-               id: `danger-aqi-${targetCity}-${today}`,
-               type: 'Danger',
-               priority: 'High',
-               title: `Severe AQI Warning in ${targetCity}`,
-               description: `AQI has crossed hazardous levels. It is currently at ${Math.round(currentData.aqi)}. Please avoid outdoor activities.`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           } else if (currentData && currentData.aqi > 100) {
-             newAlerts.push({
-               id: `warning-aqi-${targetCity}-${today}`,
-               type: 'Warning',
-               priority: 'Medium',
-               title: `Elevated AQI in ${targetCity}`,
-               description: `AQI is moderately high at ${Math.round(currentData.aqi)}. Unusually sensitive individuals should consider limiting prolonged outdoor exertion.`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           } else if (currentData && currentData.aqi <= 50) {
-             newAlerts.push({
-               id: `good-aqi-${targetCity}-${today}`,
-               type: 'Prediction',
-               priority: 'Low',
-               title: `Excellent Air Quality in ${targetCity}`,
-               description: `AQI is fantastic at ${Math.round(currentData.aqi)}. Perfect conditions for outdoor activities and ventilation!`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           }
-           
-           // 2. PM2.5 Warning
-           if (currentData && currentData.pm25 > 60) {
-             newAlerts.push({
-               id: `warning-pm25-${targetCity}-${today}`,
-               type: 'Warning',
-               priority: 'High',
-               title: `High PM2.5 Levels in ${targetCity}`,
-               description: `PM2.5 concentration is ${Math.round(currentData.pm25)} µg/m³, exceeding WHO safe limits.`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           } else if (currentData && currentData.pm25 <= 15) {
-             newAlerts.push({
-               id: `good-pm25-${targetCity}-${today}`,
-               type: 'System',
-               priority: 'Low',
-               title: `Pristine PM2.5 Levels in ${targetCity}`,
-               description: `Fine particulate matter is incredibly low at ${Math.round(currentData.pm25)} µg/m³. Clean air detected.`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           }
+           try {
+              // Fetch history for trend analysis
+              const historyRes = await getHistoryData({ city: targetCity, limit: 3 });
+              if (historyRes && historyRes.records) {
+                 historyData = historyRes.records;
+              }
+           } catch (e) { /* ignore */ }
 
-           // 3. Weather / Comfort Warnings
-           if (currentData && currentData.humidity > 85) {
-             newAlerts.push({
-               id: `weather-humidity-${targetCity}-${today}`,
-               type: 'Weather',
-               priority: 'Medium',
-               title: `High Humidity in ${targetCity}`,
-               description: `Humidity is extremely high at ${currentData.humidity}%. Conditions may feel uncomfortable or muggy.`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           }
-           
-           if (currentData && currentData.temperature > 35) {
-             newAlerts.push({
-               id: `weather-heat-${targetCity}-${today}`,
-               type: 'Weather',
-               priority: 'Medium',
-               title: `Heat Advisory for ${targetCity}`,
-               description: `Temperatures are reaching ${Math.round(currentData.temperature)}°C. Stay hydrated and avoid direct sunlight.`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           } else if (currentData && currentData.temperature < 15) {
-             newAlerts.push({
-               id: `weather-cold-${targetCity}-${today}`,
-               type: 'Weather',
-               priority: 'Low',
-               title: `Cool Weather in ${targetCity}`,
-               description: `Current temperature is a cool ${Math.round(currentData.temperature)}°C. A light jacket is recommended.`,
-               time: new Date().toISOString(),
-               read: false
-             });
-           }
-
-           // 4. Prediction Alerts
-           if (predictionData) {
-             if (predictionData.status === 'Improving') {
-               newAlerts.push({
-                 id: `prediction-improving-${targetCity}-${today}`,
-                 type: 'Prediction',
-                 priority: 'Low',
-                 title: `AI Forecast: ${targetCity} Improving`,
-                 description: `AI models predict air quality in ${targetCity} will improve to ${Math.round(predictionData.predicted_aqi)} soon.`,
-                 time: new Date().toISOString(),
-                 read: false
-               });
-             } else if (predictionData.status === 'Worsening') {
-               newAlerts.push({
-                 id: `prediction-worsening-${targetCity}-${today}`,
-                 type: 'Warning',
-                 priority: 'High',
-                 title: `AI Forecast: ${targetCity} Deteriorating`,
-                 description: `AI predicts AQI will worsen to ${Math.round(predictionData.predicted_aqi)} in ${targetCity}. Prepare accordingly.`,
-                 time: new Date().toISOString(),
-                 read: false
-               });
-             } else if (predictionData.status === 'Stable') {
-               newAlerts.push({
-                 id: `prediction-stable-${targetCity}-${today}`,
-                 type: 'System',
-                 priority: 'Low',
-                 title: `AI Forecast: ${targetCity} Stable`,
-                 description: `AI forecasts indicate air quality in ${targetCity} will remain stable at ~${Math.round(predictionData.predicted_aqi)} for the next 24 hours.`,
-                 time: new Date().toISOString(),
-                 read: false
-               });
-             }
-           }
+           // Pass everything to the central rule engine!
+           const cityAlerts = generateAlerts(targetCity, currentData, predictionData, historyData);
+           allGeneratedAlerts = [...allGeneratedAlerts, ...cityAlerts];
         }));
 
-        // Add a system welcome alert if nothing else triggers
-        if (newAlerts.length === 0 && city) {
-           newAlerts.push({
+        if (allGeneratedAlerts.length === 0 && city) {
+           const today = new Date().toISOString().split('T')[0];
+           allGeneratedAlerts.push({
               id: `system-welcome-${city}-${today}`,
-              type: 'System',
+              category: 'System',
               priority: 'Low',
               title: 'System Active',
               description: `Live monitoring active for ${city} and your watchlisted cities. Air quality is currently within normal parameters.`,
               time: new Date().toISOString(),
-              read: false
+              read: false,
+              city
            });
         }
 
         // Sort new alerts by priority (High -> Medium -> Low)
         const priorityScore = { 'High': 3, 'Medium': 2, 'Low': 1 };
-        newAlerts.sort((a, b) => priorityScore[b.priority] - priorityScore[a.priority]);
+        allGeneratedAlerts.sort((a, b) => priorityScore[b.priority] - priorityScore[a.priority]);
 
         // Merge with locally stored states (so dismissed alerts stay dismissed)
         const saved = localStorage.getItem('user_alerts_state');
         const alertStates = saved ? JSON.parse(saved) : {};
         
-        const mergedAlerts = newAlerts.filter(a => {
+        const mergedAlerts = allGeneratedAlerts.filter(a => {
            if (alertStates[a.id]?.deleted) return false;
            if (alertStates[a.id]?.read) {
              a.read = true;
@@ -218,7 +105,7 @@ const AlertList = () => {
     };
 
     fetchDynamicAlerts();
-    const interval = setInterval(fetchDynamicAlerts, 5 * 60 * 1000); // refresh every 5 mins
+    const interval = setInterval(fetchDynamicAlerts, 5 * 60 * 1000); 
     return () => clearInterval(interval);
   }, [city, user]);
 
@@ -273,15 +160,26 @@ const AlertList = () => {
     return true;
   });
 
-  const getStyleProps = (type) => {
-    switch(type) {
-      case 'Danger': return { icon: <XCircle size={20} color="#EF4444" />, bg: 'rgba(239, 68, 68, 0.05)', border: 'rgba(239, 68, 68, 0.2)', glow: '0 0 15px rgba(239, 68, 68, 0.1)' };
-      case 'Warning': return { icon: <AlertTriangle size={20} color="#F59E0B" />, bg: 'rgba(245, 158, 11, 0.05)', border: 'rgba(245, 158, 11, 0.2)', glow: '0 0 15px rgba(245, 158, 11, 0.1)' };
-      case 'System': return { icon: <Info size={20} color="#3B82F6" />, bg: 'rgba(59, 130, 246, 0.05)', border: 'rgba(59, 130, 246, 0.2)', glow: '0 0 15px rgba(59, 130, 246, 0.1)' };
-      case 'Prediction': return { icon: <Sparkles size={20} color="#10B981" />, bg: 'rgba(16, 185, 129, 0.05)', border: 'rgba(16, 185, 129, 0.2)', glow: '0 0 15px rgba(16, 185, 129, 0.1)' };
-      case 'Weather': return { icon: <Info size={20} color="#06b6d4" />, bg: 'rgba(6, 182, 212, 0.05)', border: 'rgba(6, 182, 212, 0.2)', glow: '0 0 15px rgba(6, 182, 212, 0.1)' };
-      default: return { icon: <Bell size={20} color="var(--text-secondary)" />, bg: 'var(--bg-main)', border: 'var(--border-light)', glow: 'none' };
+  const getStyleProps = (category) => {
+    switch(category) {
+      case 'Air Quality': 
+        return { icon: <Sparkles size={20} color="#8B5CF6" />, bg: 'rgba(139, 92, 246, 0.05)', border: 'rgba(139, 92, 246, 0.2)', glow: '0 0 15px rgba(139, 92, 246, 0.1)', tagBg: 'rgba(139, 92, 246, 0.1)', tagColor: '#8B5CF6' };
+      case 'Health': 
+        return { icon: <HeartPulse size={20} color="#EF4444" />, bg: 'rgba(239, 68, 68, 0.05)', border: 'rgba(239, 68, 68, 0.2)', glow: '0 0 15px rgba(239, 68, 68, 0.1)', tagBg: 'rgba(239, 68, 68, 0.1)', tagColor: '#EF4444' };
+      case 'Weather': 
+        return { icon: <Info size={20} color="#3B82F6" />, bg: 'rgba(59, 130, 246, 0.05)', border: 'rgba(59, 130, 246, 0.2)', glow: '0 0 15px rgba(59, 130, 246, 0.1)', tagBg: 'rgba(59, 130, 246, 0.1)', tagColor: '#3B82F6' };
+      case 'Trend': 
+        return { icon: <Activity size={20} color="#F97316" />, bg: 'rgba(249, 115, 22, 0.05)', border: 'rgba(249, 115, 22, 0.2)', glow: '0 0 15px rgba(249, 115, 22, 0.1)', tagBg: 'rgba(249, 115, 22, 0.1)', tagColor: '#F97316' };
+      case 'System': 
+      default: 
+        return { icon: <Bell size={20} color="var(--text-secondary)" />, bg: 'var(--bg-main)', border: 'var(--border-light)', glow: 'none', tagBg: 'var(--bg-card)', tagColor: 'var(--text-secondary)' };
     }
+  };
+
+  const getPriorityColor = (priority) => {
+      if (priority === 'High') return { bg: 'rgba(239, 68, 68, 0.1)', text: '#EF4444' };
+      if (priority === 'Medium') return { bg: 'rgba(245, 158, 11, 0.1)', text: '#F59E0B' };
+      return { bg: 'var(--bg-card)', text: 'var(--text-secondary)' };
   };
 
   if (loading) {
@@ -289,7 +187,7 @@ const AlertList = () => {
         <div className="card" style={{ padding: '4rem', textAlign: 'center', background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border-light)' }}>
            <div className="loader" style={{ width: '40px', height: '40px', borderWidth: '3px', margin: '0 auto', borderColor: 'var(--accent-primary) transparent transparent transparent' }}></div>
            <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Analyzing Air Quality Data</h3>
-           <p className="text-muted" style={{ margin: 0 }}>Gathering live intelligence and running AI predictions across your watchlisted cities...</p>
+           <p className="text-muted" style={{ margin: 0 }}>Running AI engine across your watchlisted cities...</p>
         </div>
      );
   }
@@ -341,7 +239,9 @@ const AlertList = () => {
           )}
 
           {filteredAlerts.map((alert) => {
-            const styleProps = getStyleProps(alert.type);
+            const styleProps = getStyleProps(alert.category);
+            const prioProps = getPriorityColor(alert.priority);
+            
             return (
               <motion.div 
                 key={alert.id}
@@ -383,8 +283,8 @@ const AlertList = () => {
                   </div>
                   <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', color: alert.read ? 'var(--text-muted)' : 'var(--text-secondary)', lineHeight: 1.5 }}>{alert.description}</p>
                   <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 500, padding: '4px 10px', borderRadius: '20px', background: 'var(--bg-main)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>{alert.type}</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', background: alert.priority === 'High' ? 'rgba(239, 68, 68, 0.1)' : 'var(--bg-main)', color: alert.priority === 'High' ? '#EF4444' : 'var(--text-secondary)' }}>{alert.priority} Priority</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', background: styleProps.tagBg, color: styleProps.tagColor }}>{alert.category}</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', background: prioProps.bg, color: prioProps.text }}>{alert.priority} Priority</span>
                   </div>
                 </div>
                 
