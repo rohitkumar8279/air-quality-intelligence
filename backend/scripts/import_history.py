@@ -30,8 +30,11 @@ sys.path.insert(0, project_root)
 
 from database.database import SessionLocal, engine
 from database.models import AQIRecord
+from sqlalchemy.orm import Session
 
-DATASET_PATH = os.path.join(project_root, "datasets", "INDIA_AQI_COMPLETE_20251126.csv")
+# Try .csv.gz first, then .csv
+DATASET_PATH_GZ = os.path.join(project_root, "datasets", "INDIA_AQI_COMPLETE_20251126.csv.gz")
+DATASET_PATH_CSV = os.path.join(project_root, "datasets", "INDIA_AQI_COMPLETE_20251126.csv")
 
 def clean_and_validate(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -40,7 +43,6 @@ def clean_and_validate(df: pd.DataFrame) -> pd.DataFrame:
     logger.info(f"Raw dataset shape: {df.shape}")
 
     # Step 1: Keep only necessary columns and rename them
-    # The DB expects: city, timestamp, aqi, pm25, pm10, no2, temperature, humidity, wind_speed
     cols_map = {
         "City": "city",
         "Datetime": "timestamp",
@@ -53,7 +55,6 @@ def clean_and_validate(df: pd.DataFrame) -> pd.DataFrame:
         "Wind_Speed_10m_kmh": "wind_speed"
     }
     
-    # Ensure all required columns exist in the dataset
     available_cols = [c for c in cols_map.keys() if c in df.columns]
     df = df[available_cols].copy()
     df.rename(columns=cols_map, inplace=True)
@@ -78,9 +79,8 @@ def clean_and_validate(df: pd.DataFrame) -> pd.DataFrame:
 
 def import_to_database(df: pd.DataFrame):
     """
-    Imports cleaned records into SQLite using pandas to_sql for speed.
+    Imports cleaned records into SQLite/PostgreSQL using pandas to_sql for speed.
     """
-    # Clean the table first to avoid duplicates
     logger.info("Clearing existing aqi_records table...")
     db = SessionLocal()
     try:
@@ -97,29 +97,49 @@ def import_to_database(df: pd.DataFrame):
     logger.info("Database import completed successfully.")
 
 
-def main():
+def run_bulk_import():
     logger.info("=" * 60)
-    logger.info("Starting Historical Dataset Import (Scaled)")
+    logger.info("Starting Historical Dataset Import (Background Pipeline)")
     logger.info("=" * 60)
     
-    if not os.path.exists(DATASET_PATH):
-        logger.error(f"Dataset not found at: {DATASET_PATH}")
-        sys.exit(1)
-    
-    logger.info(f"Reading dataset from: {DATASET_PATH}")
+    db = SessionLocal()
+    try:
+        count = db.query(AQIRecord).count()
+        if count > 10000:
+            logger.info(f"Database already seeded! Contains {count} records. Aborting import to protect existing data.")
+            return {"status": "Already seeded", "count": count}
+    except Exception as e:
+        logger.error(f"Failed to check database count: {e}")
+    finally:
+        db.close()
+        
+    dataset_to_use = None
+    if os.path.exists(DATASET_PATH_GZ):
+        dataset_to_use = DATASET_PATH_GZ
+    elif os.path.exists(DATASET_PATH_CSV):
+        dataset_to_use = DATASET_PATH_CSV
+    else:
+        logger.error(f"Dataset not found at {DATASET_PATH_GZ} or {DATASET_PATH_CSV}")
+        return {"error": "Dataset not found"}
+        
+    logger.info(f"Reading dataset from: {dataset_to_use}")
     
     # We load only the columns we need to save memory and parsing time
     usecols = ["City", "Datetime", "US_AQI", "PM2_5_ugm3", "PM10_ugm3", "NO2_ugm3", "Temp_2m_C", "Humidity_Percent", "Wind_Speed_10m_kmh"]
-    df = pd.read_csv(DATASET_PATH, usecols=lambda c: c in usecols)
-    logger.info(f"Loaded {len(df)} total rows from CSV")
+    df = pd.read_csv(dataset_to_use, usecols=lambda c: c in usecols)
+    logger.info(f"Loaded {len(df)} total rows from dataset")
     
     df_clean = clean_and_validate(df)
     
     if df_clean.empty:
         logger.warning("No valid records found. Exiting.")
-        return
+        return {"status": "No valid records"}
     
     import_to_database(df_clean)
+    return {"status": "Success", "rows_imported": len(df_clean)}
+
+def main():
+    run_bulk_import()
 
 if __name__ == "__main__":
     main()

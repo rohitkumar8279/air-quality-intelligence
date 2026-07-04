@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -14,6 +14,7 @@ from backend.services.openaq import fetch_aqi
 from backend.services.weather import fetch_weather, get_coordinates, fetch_advanced_weather
 import backend.services.prediction as prediction_service
 from backend.config.cities import CITY_CONFIG
+from backend.scripts.import_history import run_bulk_import
 
 from backend.routers import auth, users
 
@@ -63,6 +64,15 @@ app.add_middleware(
 @app.get("/", tags=["System"])
 def root():
     return {"message": "Welcome to the Urban Air Quality Intelligence API", "docs": "/docs", "health": "/health"}
+
+@app.post("/api/system/trigger-import", tags=["System"])
+def trigger_bulk_import(background_tasks: BackgroundTasks):
+    """
+    Triggers the bulk import of the historical dataset in the background.
+    Useful for seeding the database on platforms like Render where HTTP timeouts exist.
+    """
+    background_tasks.add_task(run_bulk_import)
+    return {"status": "Import started in background. This may take a few minutes depending on dataset size."}
 
 @app.get("/api/cities", tags=["System"])
 def get_cities(db: Session = Depends(get_db)):
