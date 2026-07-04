@@ -7,8 +7,9 @@ import backend.models as models
 
 logger = logging.getLogger(__name__)
 
-# Construct the absolute path to the model file
-MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "ml", "model.pkl")
+# Construct the absolute path to the model file (root/ml/model.pkl)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+MODEL_PATH = os.path.join(PROJECT_ROOT, "ml", "model.pkl")
 
 # Load the model only once when this module is imported (at server startup)
 model = None
