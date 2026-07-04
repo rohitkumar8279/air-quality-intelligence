@@ -66,10 +66,24 @@ def root():
 
 @app.get("/api/cities", tags=["System"])
 def get_cities(db: Session = Depends(get_db)):
-    """Returns a list of all available cities in the database."""
+    """Returns a list of all available cities (from DB and static list)."""
     try:
-        cities = db.query(models.AQIRecord.city).filter(models.AQIRecord.city != None).distinct().order_by(models.AQIRecord.city).all()
-        return [c[0] for c in cities]
+        # Load from DB
+        db_cities = db.query(models.AQIRecord.city).filter(models.AQIRecord.city != None).distinct().all()
+        city_set = {c[0] for c in db_cities}
+        
+        # Load from all_cities.json if it exists
+        try:
+            import json
+            json_path = os.path.join(os.path.dirname(__file__), "config", "all_cities.json")
+            if os.path.exists(json_path):
+                with open(json_path, "r") as f:
+                    static_cities = json.load(f)
+                city_set.update(static_cities)
+        except Exception as e:
+            logger.warning(f"Could not load static cities: {e}")
+            
+        return sorted(list(city_set))
     except Exception as e:
         logger.error(f"Failed to fetch cities: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch cities.")
