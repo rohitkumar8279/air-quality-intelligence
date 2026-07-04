@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, TrendingDown, TrendingUp, Equal, AlertCircle } from 'lucide-react';
+import { CityContext } from '../context/CityContext';
 import { getPrediction } from '../services/predictionApi';
 import './PredictionCard.css';
 
@@ -48,6 +49,7 @@ const getCategoryColor = (aqi) => {
 };
 
 const PredictionCard = () => {
+  const { city } = React.useContext(CityContext);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,18 +58,24 @@ const PredictionCard = () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await getPrediction();
+      const res = await getPrediction(city);
       setData(res);
     } catch (err) {
-      setError('Prediction service unavailable.');
+      if (err.message.includes('404')) {
+        setError(`Insufficient historical data for ${city} to generate prediction.`);
+      } else {
+        setError('Prediction service currently unavailable.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPrediction();
-  }, []);
+    if (city) {
+      fetchPrediction();
+    }
+  }, [city]);
 
   if (loading) {
     return (

@@ -2,9 +2,9 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-export const getPrediction = async () => {
+export const getPrediction = async (city = "Delhi") => {
   try {
-    const response = await axios.get(`${API_URL}/predict`);
+    const response = await axios.get(`${API_URL}/predict?city=${encodeURIComponent(city)}`);
     return response.data;
   } catch (error) {
     if (error.response) {
