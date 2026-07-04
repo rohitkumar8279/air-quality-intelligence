@@ -14,7 +14,7 @@ from backend.services.openaq import fetch_aqi
 from backend.services.weather import fetch_weather, get_coordinates, fetch_advanced_weather
 import backend.services.prediction as prediction_service
 from backend.config.cities import CITY_CONFIG
-from backend.scripts.import_history import run_bulk_import
+from backend.scripts.import_history import run_bulk_import, IMPORT_STATUS
 
 from backend.routers import auth, users
 
@@ -73,6 +73,11 @@ def trigger_bulk_import(background_tasks: BackgroundTasks):
     """
     background_tasks.add_task(run_bulk_import)
     return {"status": "Import started in background. This may take a few minutes depending on dataset size."}
+
+@app.get("/api/system/import-status", tags=["System"])
+def get_import_status():
+    """Returns the real-time status of the background dataset import."""
+    return IMPORT_STATUS
 
 @app.get("/api/cities", tags=["System"])
 def get_cities(db: Session = Depends(get_db)):

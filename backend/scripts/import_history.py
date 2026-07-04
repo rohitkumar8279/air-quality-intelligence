@@ -18,6 +18,7 @@ import os
 import sys
 import logging
 import pandas as pd
+import time
 from datetime import datetime
 
 # Setup logging
@@ -31,18 +32,26 @@ sys.path.insert(0, project_root)
 from backend.database import SessionLocal, engine
 from backend.models import AQIRecord
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 # Try .csv.gz first, then .csv
 DATASET_PATH_GZ = os.path.join(project_root, "datasets", "INDIA_AQI_COMPLETE_20251126.csv.gz")
 DATASET_PATH_CSV = os.path.join(project_root, "datasets", "INDIA_AQI_COMPLETE_20251126.csv")
 
+IMPORT_STATUS = {
+    "is_running": False,
+    "total_rows_processed": 0,
+    "total_chunks_processed": 0,
+    "total_rows_in_csv": 842000,
+    "status": "idle",
+    "error": None
+}
+
 def clean_and_validate(df: pd.DataFrame) -> pd.DataFrame:
     """
     Cleans and validates the raw CSV data to match the database schema.
     """
-    logger.info(f"Raw dataset shape: {df.shape}")
-
-    # Step 1: Keep only necessary columns and rename them
     cols_map = {
         "City": "city",
         "Datetime": "timestamp",
@@ -59,60 +68,51 @@ def clean_and_validate(df: pd.DataFrame) -> pd.DataFrame:
     df = df[available_cols].copy()
     df.rename(columns=cols_map, inplace=True)
 
-    # Step 2: Drop rows where timestamp or aqi is missing
-    before_drop = len(df)
     df = df.dropna(subset=["timestamp", "aqi"])
-    dropped = before_drop - len(df)
-    if dropped > 0:
-        logger.warning(f"Dropped {dropped} rows with missing timestamp or aqi")
-    
-    # Step 3: Parse Date to datetime
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
     df = df.dropna(subset=["timestamp"])
 
-    # Step 4: Drop duplicate timestamp for the same city
     df = df.drop_duplicates(subset=["city", "timestamp"], keep="last")
-
-    logger.info(f"After cleaning: {len(df)} valid rows ready for import")
     return df
 
-
-def import_to_database(df: pd.DataFrame):
+def upsert_method(table, conn, keys, data_iter):
     """
-    Imports cleaned records into SQLite/PostgreSQL using pandas to_sql for speed.
+    Custom pandas to_sql method to securely upsert data without crashing on duplicates.
+    It checks the SQL dialect and uses the proper ON CONFLICT DO NOTHING clause.
     """
-    logger.info("Clearing existing aqi_records table...")
-    db = SessionLocal()
-    try:
-        db.query(AQIRecord).delete()
-        db.commit()
-    except Exception as e:
-        logger.error(f"Error clearing table: {e}")
-        db.rollback()
-    finally:
-        db.close()
-
-    logger.info("Inserting new records in chunks...")
-    df.to_sql(name="aqi_records", con=engine, if_exists="append", index=False, chunksize=10000)
-    logger.info("Database import completed successfully.")
-
+    data = [dict(zip(keys, row)) for row in data_iter]
+    if not data:
+        return
+        
+    if conn.dialect.name == 'postgresql':
+        stmt = pg_insert(table.table).values(data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['city', 'timestamp'])
+        conn.execute(stmt)
+    elif conn.dialect.name == 'sqlite':
+        stmt = sqlite_insert(table.table).values(data)
+        stmt = stmt.on_conflict_do_nothing(index_elements=['city', 'timestamp'])
+        conn.execute(stmt)
+    else:
+        # Fallback for other dialects
+        stmt = table.table.insert().values(data)
+        conn.execute(stmt)
 
 def run_bulk_import():
+    global IMPORT_STATUS
+    if IMPORT_STATUS["is_running"]:
+        logger.warning("Import is already running!")
+        return IMPORT_STATUS
+        
+    IMPORT_STATUS["is_running"] = True
+    IMPORT_STATUS["status"] = "starting"
+    IMPORT_STATUS["total_rows_processed"] = 0
+    IMPORT_STATUS["total_chunks_processed"] = 0
+    IMPORT_STATUS["error"] = None
+    
     logger.info("=" * 60)
-    logger.info("Starting Historical Dataset Import (Background Pipeline)")
+    logger.info("Starting Historical Dataset Import (Resumable Chunk Pipeline)")
     logger.info("=" * 60)
     
-    db = SessionLocal()
-    try:
-        count = db.query(AQIRecord).count()
-        if count > 10000:
-            logger.info(f"Database already seeded! Contains {count} records. Aborting import to protect existing data.")
-            return {"status": "Already seeded", "count": count}
-    except Exception as e:
-        logger.error(f"Failed to check database count: {e}")
-    finally:
-        db.close()
-        
     dataset_to_use = None
     if os.path.exists(DATASET_PATH_GZ):
         dataset_to_use = DATASET_PATH_GZ
@@ -120,23 +120,45 @@ def run_bulk_import():
         dataset_to_use = DATASET_PATH_CSV
     else:
         logger.error(f"Dataset not found at {DATASET_PATH_GZ} or {DATASET_PATH_CSV}")
-        return {"error": "Dataset not found"}
+        IMPORT_STATUS["status"] = "failed"
+        IMPORT_STATUS["error"] = "Dataset not found"
+        IMPORT_STATUS["is_running"] = False
+        return IMPORT_STATUS
         
-    logger.info(f"Reading dataset from: {dataset_to_use}")
+    logger.info(f"Reading dataset from: {dataset_to_use} in chunks of 25,000")
     
-    # We load only the columns we need to save memory and parsing time
     usecols = ["City", "Datetime", "US_AQI", "PM2_5_ugm3", "PM10_ugm3", "NO2_ugm3", "Temp_2m_C", "Humidity_Percent", "Wind_Speed_10m_kmh"]
-    df = pd.read_csv(dataset_to_use, usecols=lambda c: c in usecols)
-    logger.info(f"Loaded {len(df)} total rows from dataset")
     
-    df_clean = clean_and_validate(df)
-    
-    if df_clean.empty:
-        logger.warning("No valid records found. Exiting.")
-        return {"status": "No valid records"}
-    
-    import_to_database(df_clean)
-    return {"status": "Success", "rows_imported": len(df_clean)}
+    try:
+        chunk_iter = pd.read_csv(dataset_to_use, usecols=lambda c: c in usecols, chunksize=25000)
+        
+        for i, df_chunk in enumerate(chunk_iter):
+            IMPORT_STATUS["status"] = f"processing chunk {i+1}"
+            
+            df_clean = clean_and_validate(df_chunk)
+            if df_clean.empty:
+                continue
+                
+            df_clean.to_sql(name="aqi_records", con=engine, if_exists="append", index=False, method=upsert_method)
+            
+            IMPORT_STATUS["total_chunks_processed"] += 1
+            IMPORT_STATUS["total_rows_processed"] += len(df_clean)
+            logger.info(f"Inserted chunk {i+1}/34, rows {IMPORT_STATUS['total_rows_processed']}, cities in this chunk: {df_clean['city'].nunique()}")
+            
+            # Yield CPU execution to ensure health checks pass
+            time.sleep(0.1)
+            
+        IMPORT_STATUS["status"] = "completed"
+        logger.info("Dataset fully imported!")
+        
+    except Exception as e:
+        logger.error(f"Import failed: {e}")
+        IMPORT_STATUS["status"] = "failed"
+        IMPORT_STATUS["error"] = str(e)
+    finally:
+        IMPORT_STATUS["is_running"] = False
+        
+    return IMPORT_STATUS
 
 def main():
     run_bulk_import()
