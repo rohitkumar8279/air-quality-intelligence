@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { MapPin, Plus, X, Sun, CloudRain, Wind } from 'lucide-react';
-import { getFavoriteCities, addFavoriteCity } from '../services/authApi';
+import { getFavoriteCities, addFavoriteCity, removeFavoriteCity } from '../services/authApi';
 import { motion } from 'framer-motion';
 import { CITY_CONFIG } from '../config/cities';
 import api from '../services/api';
@@ -13,7 +13,7 @@ const mockCityData = {
   'Chennai': { aqi: 65, temp: 34, condition: 'Sunny', trend: 'Stable', prediction: 60 }
 };
 
-const WatchlistCard = ({ city }) => {
+const WatchlistCard = ({ city, onRemove }) => {
   const data = mockCityData[city] || { aqi: 142, temp: 28, condition: 'Clear', trend: 'Stable', prediction: 145 };
   
   const getStatusColor = (aqi) => {
@@ -27,7 +27,7 @@ const WatchlistCard = ({ city }) => {
 
   return (
     <motion.div whileHover={{ y: -2 }} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1rem', position: 'relative' }}>
-      <button style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+      <button onClick={() => onRemove(city)} style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', zIndex: 10 }}>
         <X size={14} />
       </button>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
@@ -93,6 +93,15 @@ const AQIWatchlist = () => {
     }
   };
 
+  const handleRemoveCity = async (cityToRemove) => {
+    setFavorites(prev => prev.filter(c => c !== cityToRemove));
+    try {
+      await removeFavoriteCity(cityToRemove);
+    } catch (err) {
+      console.error("Failed to remove city", err);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -124,7 +133,7 @@ const AQIWatchlist = () => {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
         {favorites.map((city, idx) => (
-          <WatchlistCard key={idx} city={city} />
+          <WatchlistCard key={idx} city={city} onRemove={handleRemoveCity} />
         ))}
       </div>
     </div>

@@ -39,4 +39,9 @@ export const addFavoriteCity = async (city_name) => {
   return response.data;
 };
 
+export const removeFavoriteCity = async (city_name) => {
+  const response = await api.delete(`/users/favorites/${encodeURIComponent(city_name)}`);
+  return response.data;
+};
+
 export default api;
