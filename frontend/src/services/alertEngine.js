@@ -9,35 +9,42 @@ export const ALERT_THRESHOLDS = {
   TREND_WORSE_PCT: 20 // % worsening over 3 days
 };
 
+export const DEFAULT_ALERT_PREFS = {
+  aqiForecast: true,
+  healthAdvisory: true,
+  pollutantSpike: true,
+  weatherCombo: true,
+  trendAlerts: true,
+  extremeWeather: true
+};
+
 /**
  * Evaluates live data, predictions, and historical trends to generate alerts.
  * @param {string} city - The city name
  * @param {object} current - Live data object
  * @param {object} prediction - AI prediction object
  * @param {array} history - Array of historical data points (descending by date)
+ * @param {object} prefs - User preferences for which alerts to enable
  * @returns {array} Array of generated alert objects
  */
-export const generateAlerts = (city, current, prediction, history = []) => {
+export const generateAlerts = (city, current, prediction, history = [], prefs = DEFAULT_ALERT_PREFS) => {
   const alerts = [];
   const today = new Date().toISOString().split('T')[0];
 
-  // Helper to construct alert objects consistently
   const buildAlert = (idSuffix, category, priority, title, message) => ({
     id: `alert-${category.replace(/\s+/g, '').toLowerCase()}-${idSuffix}-${city}-${today}`,
     title,
-    message: message, // mapped to 'description' in the UI component previously, but user requested 'message' in the spec. We'll use 'description' to match existing UI or change UI to use 'message'. Let's stick to description for backwards compatibility with AlertList.
+    message: message, 
     description: message,
-    category, // 'Weather' | 'Air Quality' | 'Health' | 'Trend' | 'System'
-    priority, // 'Low' | 'Medium' | 'High'
+    category,
+    priority,
     time: new Date().toISOString(),
     read: false,
     city
   });
 
-  // ----------------------------------------------------
-  // 1. AQI Forecast Alert (Air Quality Category)
-  // ----------------------------------------------------
-  if (prediction && prediction.predicted_aqi) {
+  // 1. AQI Forecast Alert
+  if (prefs.aqiForecast !== false && prediction && prediction.predicted_aqi) {
     if (prediction.predicted_aqi >= ALERT_THRESHOLDS.AQI_HIGH) {
       alerts.push(buildAlert(
         'aqi-forecast-high', 'Air Quality', 'High',
@@ -59,29 +66,26 @@ export const generateAlerts = (city, current, prediction, history = []) => {
     }
   }
 
-  // ----------------------------------------------------
-  // 2. Health Advisory Alert (Health Category)
-  // ----------------------------------------------------
-  // Derived from predicted AQI category
-  if (prediction && prediction.predicted_aqi >= ALERT_THRESHOLDS.AQI_MED) {
-    alerts.push(buildAlert(
-      'health-advisory', 'Health', 'High',
-      `Health Advisory: ${city}`,
-      `Sensitive groups should limit outdoor activity tomorrow due to predicted Unhealthy air quality.`
-    ));
-  } else if (current && current.aqi >= ALERT_THRESHOLDS.AQI_MED) {
-    alerts.push(buildAlert(
-      'health-current', 'Health', 'Medium',
-      `Current Health Warning: ${city}`,
-      `Current AQI is Unhealthy. Reduce prolonged or heavy outdoor exertion.`
-    ));
+  // 2. Health Advisory Alert
+  if (prefs.healthAdvisory !== false) {
+    if (prediction && prediction.predicted_aqi >= ALERT_THRESHOLDS.AQI_MED) {
+      alerts.push(buildAlert(
+        'health-advisory', 'Health', 'High',
+        `Health Advisory: ${city}`,
+        `Sensitive groups should limit outdoor activity tomorrow due to predicted Unhealthy air quality.`
+      ));
+    } else if (current && current.aqi >= ALERT_THRESHOLDS.AQI_MED) {
+      alerts.push(buildAlert(
+        'health-current', 'Health', 'Medium',
+        `Current Health Warning: ${city}`,
+        `Current AQI is Unhealthy. Reduce prolonged or heavy outdoor exertion.`
+      ));
+    }
   }
 
-  // ----------------------------------------------------
-  // 3. Pollutant Spike Alert (Air Quality Category)
-  // ----------------------------------------------------
-  if (current && current.pm25 > ALERT_THRESHOLDS.PM25_SPIKE) {
-    const multiplier = (current.pm25 / 15).toFixed(1); // Assuming 15 is WHO guideline
+  // 3. Pollutant Spike Alert
+  if (prefs.pollutantSpike !== false && current && current.pm25 > ALERT_THRESHOLDS.PM25_SPIKE) {
+    const multiplier = (current.pm25 / 15).toFixed(1); 
     alerts.push(buildAlert(
       'pollutant-spike-pm25', 'Air Quality', 'High',
       `PM2.5 Spike Detected in ${city}`,
@@ -89,12 +93,8 @@ export const generateAlerts = (city, current, prediction, history = []) => {
     ));
   }
 
-  // ----------------------------------------------------
-  // 4. Weather-AQI Combo Alert (Air Quality Category)
-  // ----------------------------------------------------
-  // Low wind speed + rising AQI traps pollutants
-  if (current && prediction) {
-    // Check if wind speed exists, sometimes APIs omit it. Let's assume current.wind_speed is available.
+  // 4. Weather-AQI Combo Alert
+  if (prefs.weatherCombo !== false && current && prediction) {
     const isLowWind = current.wind_speed !== undefined && current.wind_speed < 5;
     const isRisingAQI = prediction.predicted_aqi > (current.aqi + 15) && prediction.predicted_aqi > ALERT_THRESHOLDS.AQI_LOW;
 
@@ -107,12 +107,8 @@ export const generateAlerts = (city, current, prediction, history = []) => {
     }
   }
 
-  // ----------------------------------------------------
-  // 5. Trend Alert (Trend Category)
-  // ----------------------------------------------------
-  if (history && history.length >= 3 && current) {
-    // Calculate average AQI over the last 3 historical records
-    // Assuming history records are ordered by date descending
+  // 5. Trend Alert
+  if (prefs.trendAlerts !== false && history && history.length >= 3 && current) {
     const recentHistory = history.slice(0, 3);
     const avgAqi = recentHistory.reduce((sum, record) => sum + record.aqi, 0) / recentHistory.length;
 
@@ -135,10 +131,8 @@ export const generateAlerts = (city, current, prediction, history = []) => {
     }
   }
 
-  // ----------------------------------------------------
-  // 6. Extreme Weather Alerts (Weather Category)
-  // ----------------------------------------------------
-  if (current) {
+  // 6. Extreme Weather Alerts
+  if (prefs.extremeWeather !== false && current) {
     if (current.humidity >= ALERT_THRESHOLDS.HUMIDITY_HIGH) {
       alerts.push(buildAlert(
         'weather-humidity', 'Weather', 'Medium',
