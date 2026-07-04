@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Filter, Search } from 'lucide-react';
+import { CityContext } from '../../context/CityContext';
 
 const AnalyticsFilters = ({ filters, setFilters }) => {
+  const { availableCities } = useContext(CityContext);
+
   const handleDateChange = (e) => {
     setFilters({ ...filters, dateRange: e.target.value });
   };
@@ -42,8 +45,9 @@ const AnalyticsFilters = ({ filters, setFilters }) => {
           minWidth: '150px'
         }}
       >
-        <option value="Delhi">Delhi</option>
-        {/* Further cities could be added here in the future */}
+        {availableCities && availableCities.map(c => (
+          <option key={c} value={c}>{c}</option>
+        ))}
       </select>
 
       <select 

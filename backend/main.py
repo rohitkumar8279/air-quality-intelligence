@@ -11,7 +11,7 @@ import backend.models as models
 import backend.crud as crud
 import backend.schemas as schemas
 from backend.services.openaq import fetch_aqi
-from backend.services.weather import fetch_weather
+from backend.services.weather import fetch_weather, get_coordinates
 import backend.services.prediction as prediction_service
 from backend.config.cities import CITY_CONFIG
 
@@ -64,6 +64,16 @@ app.add_middleware(
 def root():
     return {"message": "Welcome to the Urban Air Quality Intelligence API", "docs": "/docs", "health": "/health"}
 
+@app.get("/api/cities", tags=["System"])
+def get_cities(db: Session = Depends(get_db)):
+    """Returns a list of all available cities in the database."""
+    try:
+        cities = db.query(models.AQIRecord.city).filter(models.AQIRecord.city != None).distinct().order_by(models.AQIRecord.city).all()
+        return [c[0] for c in cities]
+    except Exception as e:
+        logger.error(f"Failed to fetch cities: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch cities.")
+
 @app.get("/health", tags=["System"])
 def health_check(db: Session = Depends(get_db)):
     """
@@ -83,16 +93,19 @@ def get_current_aqi(city: str = Query("Delhi", description="Name of the city"), 
     stores it in the database, and returns the result.
     If external APIs fail, it falls back to the most recent record in the database.
     """
-    config = CITY_CONFIG.get(city)
-    if not config:
-        raise HTTPException(status_code=400, detail=f"City '{city}' is not supported.")
-        
     # 1. Fetch from external APIs
-    try:
-        aqi_data = fetch_aqi(config["lat"], config["lon"])
-        weather_data = fetch_weather(config["lat"], config["lon"])
-    except Exception as e:
-        logger.error(f"External API fetch failed for {city}: {str(e)}")
+    config = CITY_CONFIG.get(city)
+    lat, lon = (config["lat"], config["lon"]) if config else get_coordinates(city)
+    
+    if lat and lon:
+        try:
+            aqi_data = fetch_aqi(lat, lon)
+            weather_data = fetch_weather(lat, lon)
+        except Exception as e:
+            logger.error(f"External API fetch failed for {city}: {str(e)}")
+            aqi_data = None
+            weather_data = None
+    else:
         aqi_data = None
         weather_data = None
     
@@ -161,8 +174,8 @@ def get_history(
     - `GET /api/history?start_date=2023-01-01&end_date=2023-12-31` → all 2023 records
     - `GET /api/history?skip=500&limit=500` → second page of results
     """
-    if city not in CITY_CONFIG:
-        raise HTTPException(status_code=400, detail=f"City '{city}' is not supported.")
+    if not city:
+        raise HTTPException(status_code=400, detail="City parameter is required.")
 
     # Validate: if one date is provided, both must be provided
     if (start_date and not end_date) or (end_date and not start_date):
@@ -196,8 +209,8 @@ def predict_aqi(city: str = Query("Delhi"), db: Session = Depends(get_db)):
     if prediction_service.model is None:
         raise HTTPException(status_code=500, detail="Prediction model is currently unavailable.")
         
-    if city not in CITY_CONFIG:
-        raise HTTPException(status_code=400, detail=f"City '{city}' is not supported.")
+    if not city:
+        raise HTTPException(status_code=400, detail="City parameter is required.")
         
     latest_record = crud.get_latest_aqi(db, city)
     

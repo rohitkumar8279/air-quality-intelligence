@@ -48,3 +48,17 @@ def fetch_weather(lat: float, lon: float):
     except Exception as e:
         logger.error(f"Failed to fetch weather data from Open-Meteo: {str(e)}")
         return None
+
+def get_coordinates(city: str):
+    """Dynamically fetch coordinates for a given city using Open-Meteo Geocoding API."""
+    try:
+        url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&language=en&format=json"
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        if "results" in data and len(data["results"]) > 0:
+            return data["results"][0]["latitude"], data["results"][0]["longitude"]
+    except Exception as e:
+        logger.error(f"Failed to geocode {city}: {e}")
+    return None, None
+

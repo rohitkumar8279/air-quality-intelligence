@@ -1,12 +1,9 @@
 import React, { useContext } from 'react';
 import { CityContext } from '../context/CityContext';
-import { CITY_CONFIG } from '../config/cities';
 import { MapPin, ChevronDown } from 'lucide-react';
 
-const cities = Object.keys(CITY_CONFIG);
-
 const CitySelector = () => {
-  const { city, setCity } = useContext(CityContext);
+  const { city, setCity, availableCities } = useContext(CityContext);
 
   return (
     <div className="location-pill" style={{ position: 'relative' }}>
@@ -27,7 +24,7 @@ const CitySelector = () => {
           paddingRight: '1rem' // space for chevron
         }}
       >
-        {cities.map(c => (
+        {availableCities.map(c => (
           <option key={c} value={c} style={{ background: 'var(--bg-card)', color: 'var(--text-primary)' }}>
             {c}
           </option>
