@@ -10,11 +10,13 @@ import AQITrendCard from '../components/AQITrendCard';
 import PredictionCard from '../components/PredictionCard';
 import AQIWatchlist from '../components/AQIWatchlist';
 import { fetchCurrentData } from '../services/api';
+import { getHistoryData } from '../services/analyticsApi';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const { city } = useContext(CityContext);
   const [data, setData] = useState(null);
+  const [historyData, setHistoryData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -22,8 +24,12 @@ const Dashboard = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const responseData = await fetchCurrentData(city);
+        const [responseData, historyRes] = await Promise.all([
+          fetchCurrentData(city),
+          getHistoryData({ city, limit: 24 })
+        ]);
         setData(responseData);
+        setHistoryData(historyRes?.records || []);
         setError(null);
       } catch (err) {
         console.error("Failed to load dashboard data", err);
@@ -164,7 +170,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid-row-3" style={{marginTop: '1.5rem'}}>
-          <AQITrendCard />
+          <AQITrendCard historyData={historyData} />
         </div>
 
         {/* Bottom Banner */}
