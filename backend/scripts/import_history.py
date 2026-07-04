@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, project_root)
 
-from database.database import SessionLocal, engine
-from database.models import AQIRecord
+from backend.database import SessionLocal, engine
+from backend.models import AQIRecord
 from sqlalchemy.orm import Session
 
 # Try .csv.gz first, then .csv
