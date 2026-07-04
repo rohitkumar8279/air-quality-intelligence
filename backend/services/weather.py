@@ -62,3 +62,59 @@ def get_coordinates(city: str):
         logger.error(f"Failed to geocode {city}: {e}")
     return None, None
 
+import time
+
+_ADVANCED_WEATHER_CACHE = {}
+CACHE_TTL_SECONDS = 600  # 10 minutes
+
+def fetch_advanced_weather(lat: float, lon: float):
+    """
+    Fetches advanced meteorological data with a 10-minute in-memory cache to ensure sub-second latency.
+    """
+    cache_key = f"{lat},{lon}"
+    current_time = time.time()
+    
+    if cache_key in _ADVANCED_WEATHER_CACHE:
+        cached_data, timestamp = _ADVANCED_WEATHER_CACHE[cache_key]
+        if current_time - timestamp < CACHE_TTL_SECONDS:
+            return cached_data
+
+    WEATHER_URL = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}"
+        f"&current=temperature_2m,relative_humidity_2m,apparent_temperature,cloud_cover,surface_pressure,wind_speed_10m,wind_direction_10m"
+        f"&hourly=visibility,uv_index,precipitation_probability"
+        f"&timezone=auto"
+    )
+    
+    try:
+        response = requests.get(WEATHER_URL, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        current = data.get("current", {})
+        hourly = data.get("hourly", {})
+        
+        result = {
+            "temperature": current.get("temperature_2m"),
+            "feels_like": current.get("apparent_temperature"),
+            "humidity": current.get("relative_humidity_2m"),
+            "pressure": current.get("surface_pressure"),
+            "cloud_cover": current.get("cloud_cover"),
+            "wind_speed": current.get("wind_speed_10m"),
+            "wind_direction": current.get("wind_direction_10m"),
+            "visibility": hourly.get("visibility", [None])[0] if hourly.get("visibility") else None,
+            "uv_index": hourly.get("uv_index", [None])[0] if hourly.get("uv_index") else None,
+            "rain_chance": hourly.get("precipitation_probability", [None])[0] if hourly.get("precipitation_probability") else 0,
+        }
+        
+        # Convert visibility from meters to km
+        if result["visibility"] is not None:
+            result["visibility"] = round(result["visibility"] / 1000.0, 1)
+            
+        _ADVANCED_WEATHER_CACHE[cache_key] = (result, current_time)
+        return result
+    except Exception as e:
+        logger.error(f"Failed to fetch advanced weather: {e}")
+        return None
+

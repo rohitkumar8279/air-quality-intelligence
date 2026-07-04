@@ -1,27 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { CloudSun } from 'lucide-react';
-import { getCurrentData, getHistoryData } from '../services/analyticsApi';
+import { CityContext } from '../context/CityContext';
+import { getCurrentData, getHistoryData, getAdvancedWeather } from '../services/analyticsApi';
 
 import WeatherDashboardCards from '../components/weather/WeatherCards';
 import { TemperatureTrendChart, HumidityWindChart } from '../components/weather/WeatherCharts';
 import ChartContainer from '../components/analytics/ChartContainer';
 
 const Weather = () => {
+  const { city } = useContext(CityContext);
   const [loading, setLoading] = useState(true);
   const [currentData, setCurrentData] = useState(null);
+  const [advancedData, setAdvancedData] = useState(null);
   const [historyData, setHistoryData] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [curr, hist] = await Promise.all([
-          getCurrentData(),
-          getHistoryData({ limit: 168 })
+        const [curr, hist, adv] = await Promise.all([
+          getCurrentData(city),
+          getHistoryData({ limit: 168, city }),
+          getAdvancedWeather(city)
         ]);
         setCurrentData(curr);
         setHistoryData(hist.records || []);
+        setAdvancedData(adv);
       } catch (error) {
         console.error("Failed to load weather data", error);
       } finally {
@@ -29,7 +34,7 @@ const Weather = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [city]);
 
   if (loading) {
     return (
@@ -56,7 +61,7 @@ const Weather = () => {
         </p>
       </div>
 
-      <WeatherDashboardCards currentData={currentData} />
+      <WeatherDashboardCards currentData={currentData} advancedData={advancedData} />
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', marginBottom: '1.5rem' }}>
         <ChartContainer title="Temperature Trend (°C)" delay={8}>

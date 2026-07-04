@@ -11,7 +11,7 @@ import backend.models as models
 import backend.crud as crud
 import backend.schemas as schemas
 from backend.services.openaq import fetch_aqi
-from backend.services.weather import fetch_weather, get_coordinates
+from backend.services.weather import fetch_weather, get_coordinates, fetch_advanced_weather
 import backend.services.prediction as prediction_service
 from backend.config.cities import CITY_CONFIG
 
@@ -87,6 +87,25 @@ def get_cities(db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Failed to fetch cities: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch cities.")
+
+@app.get("/api/weather/advanced", tags=["Data Integration"])
+def get_advanced_weather_endpoint(city: str = Query(..., description="City name to fetch advanced weather for")):
+    """Fetches real-time advanced meteorological data directly from Open-Meteo, bypassing the database."""
+    try:
+        lat, lon = get_coordinates(city)
+        if lat is None or lon is None:
+            raise HTTPException(status_code=404, detail=f"Could not geocode city: {city}")
+        
+        advanced_data = fetch_advanced_weather(lat, lon)
+        if not advanced_data:
+            raise HTTPException(status_code=500, detail="Failed to fetch advanced weather from Open-Meteo API.")
+            
+        return advanced_data
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in /api/weather/advanced for {city}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error while fetching weather data.")
 
 @app.get("/health", tags=["System"])
 def health_check(db: Session = Depends(get_db)):

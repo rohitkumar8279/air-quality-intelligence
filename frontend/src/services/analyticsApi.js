@@ -44,3 +44,16 @@ export const getPredictionData = async (city = "Delhi") => {
     throw error;
   }
 };
+
+/**
+ * Fetch advanced live weather data directly from Open-Meteo
+ */
+export const getAdvancedWeather = async (city = "Delhi") => {
+  try {
+    const response = await api.get(`/weather/advanced?city=${encodeURIComponent(city)}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching advanced weather data:', error);
+    throw error;
+  }
+};
