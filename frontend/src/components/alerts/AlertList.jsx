@@ -63,6 +63,26 @@ const AlertList = () => {
                time: new Date().toISOString(),
                read: false
              });
+           } else if (currentData && currentData.aqi > 100) {
+             newAlerts.push({
+               id: `warning-aqi-${targetCity}-${today}`,
+               type: 'Warning',
+               priority: 'Medium',
+               title: `Elevated AQI in ${targetCity}`,
+               description: `AQI is moderately high at ${Math.round(currentData.aqi)}. Unusually sensitive individuals should consider limiting prolonged outdoor exertion.`,
+               time: new Date().toISOString(),
+               read: false
+             });
+           } else if (currentData && currentData.aqi <= 50) {
+             newAlerts.push({
+               id: `good-aqi-${targetCity}-${today}`,
+               type: 'Prediction',
+               priority: 'Low',
+               title: `Excellent Air Quality in ${targetCity}`,
+               description: `AQI is fantastic at ${Math.round(currentData.aqi)}. Perfect conditions for outdoor activities and ventilation!`,
+               time: new Date().toISOString(),
+               read: false
+             });
            }
            
            // 2. PM2.5 Warning
@@ -72,20 +92,52 @@ const AlertList = () => {
                type: 'Warning',
                priority: 'High',
                title: `High PM2.5 Levels in ${targetCity}`,
-               description: `PM2.5 concentration is ${Math.round(currentData.pm25)} µg/m³, exceeding safe limits.`,
+               description: `PM2.5 concentration is ${Math.round(currentData.pm25)} µg/m³, exceeding WHO safe limits.`,
+               time: new Date().toISOString(),
+               read: false
+             });
+           } else if (currentData && currentData.pm25 <= 15) {
+             newAlerts.push({
+               id: `good-pm25-${targetCity}-${today}`,
+               type: 'System',
+               priority: 'Low',
+               title: `Pristine PM2.5 Levels in ${targetCity}`,
+               description: `Fine particulate matter is incredibly low at ${Math.round(currentData.pm25)} µg/m³. Clean air detected.`,
                time: new Date().toISOString(),
                read: false
              });
            }
 
-           // 3. High Humidity / Weather Warning
+           // 3. Weather / Comfort Warnings
            if (currentData && currentData.humidity > 85) {
              newAlerts.push({
                id: `weather-humidity-${targetCity}-${today}`,
                type: 'Weather',
                priority: 'Medium',
                title: `High Humidity in ${targetCity}`,
-               description: `Humidity is extremely high at ${currentData.humidity}%. Conditions may feel uncomfortable.`,
+               description: `Humidity is extremely high at ${currentData.humidity}%. Conditions may feel uncomfortable or muggy.`,
+               time: new Date().toISOString(),
+               read: false
+             });
+           }
+           
+           if (currentData && currentData.temperature > 35) {
+             newAlerts.push({
+               id: `weather-heat-${targetCity}-${today}`,
+               type: 'Weather',
+               priority: 'Medium',
+               title: `Heat Advisory for ${targetCity}`,
+               description: `Temperatures are reaching ${Math.round(currentData.temperature)}°C. Stay hydrated and avoid direct sunlight.`,
+               time: new Date().toISOString(),
+               read: false
+             });
+           } else if (currentData && currentData.temperature < 15) {
+             newAlerts.push({
+               id: `weather-cold-${targetCity}-${today}`,
+               type: 'Weather',
+               priority: 'Low',
+               title: `Cool Weather in ${targetCity}`,
+               description: `Current temperature is a cool ${Math.round(currentData.temperature)}°C. A light jacket is recommended.`,
                time: new Date().toISOString(),
                read: false
              });
@@ -110,6 +162,16 @@ const AlertList = () => {
                  priority: 'High',
                  title: `AI Forecast: ${targetCity} Deteriorating`,
                  description: `AI predicts AQI will worsen to ${Math.round(predictionData.predicted_aqi)} in ${targetCity}. Prepare accordingly.`,
+                 time: new Date().toISOString(),
+                 read: false
+               });
+             } else if (predictionData.status === 'Stable') {
+               newAlerts.push({
+                 id: `prediction-stable-${targetCity}-${today}`,
+                 type: 'System',
+                 priority: 'Low',
+                 title: `AI Forecast: ${targetCity} Stable`,
+                 description: `AI forecasts indicate air quality in ${targetCity} will remain stable at ~${Math.round(predictionData.predicted_aqi)} for the next 24 hours.`,
                  time: new Date().toISOString(),
                  read: false
                });
