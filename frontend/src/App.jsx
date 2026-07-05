@@ -13,6 +13,7 @@ import HealthAdvice from './pages/HealthAdvice';
 import Alerts from './pages/Alerts';
 import Settings from './pages/Settings';
 import AIInsights from './pages/AIInsights';
+import ExplainableAI from './pages/ExplainableAI';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
@@ -54,6 +55,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/ai-insights" element={<AIInsights />} />
+              <Route path="/explainable-ai" element={<ExplainableAI />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/air-quality" element={<AirQuality />} />
               <Route path="/weather" element={<Weather />} />
