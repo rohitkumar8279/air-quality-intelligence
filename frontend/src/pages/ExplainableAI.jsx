@@ -53,7 +53,7 @@ const ExplainableAI = () => {
         setWeather(weathRes.status === 'fulfilled' ? weathRes.value : null);
         setPredExplanation(expRes.status === 'fulfilled' ? expRes.value : null);
         setDailySummary(dailyRes.status === 'fulfilled' ? dailyRes.value : null);
-        setFeatureImportance(featRes.status === 'fulfilled' ? featRes.value : null);
+        setFeatureImportance(featRes.status === 'fulfilled' && featRes.value ? featRes.value.features : null);
         setInsights(insRes.status === 'fulfilled' ? insRes.value : null);
         
       } catch (err) {
@@ -84,13 +84,13 @@ const ExplainableAI = () => {
   ];
 
   // Section 3 Data (Horizontal Bar Chart)
-  const sourceAttribution = [
-    { name: 'Traffic', value: 45 },
-    { name: 'Construction', value: 20 },
-    { name: 'Industry', value: 15 },
-    { name: 'Road Dust', value: 10 },
-    { name: 'Waste Burning', value: 5 },
-    { name: 'Residential', value: 5 }
+  const sourceAttribution = pollution && pollution.contributions ? pollution.contributions : [
+    { name: 'Traffic', value: 45, percentage: 45 },
+    { name: 'Construction', value: 20, percentage: 20 },
+    { name: 'Industry', value: 15, percentage: 15 },
+    { name: 'Road Dust', value: 10, percentage: 10 },
+    { name: 'Waste Burning', value: 5, percentage: 5 },
+    { name: 'Residential', value: 5, percentage: 5 }
   ];
 
   // Section 6 Data (Government Actions)
@@ -200,7 +200,7 @@ const ExplainableAI = () => {
                   contentStyle={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-light)', borderRadius: '8px'}}
                   itemStyle={{color: '#fff'}}
                 />
-                <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]}>
+                <Bar dataKey={pollution && pollution.contributions ? "percentage" : "value"} fill="#3b82f6" radius={[0, 4, 4, 0]}>
                   {sourceAttribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : index === 1 ? '#f59e0b' : '#3b82f6'} />
                   ))}
@@ -218,7 +218,7 @@ const ExplainableAI = () => {
           <div className="weather-impact-item">
             <div className="weather-impact-header"><Wind size={18} color="#3b82f6" /> Wind Speed</div>
             <p className="weather-impact-text">
-              {weather ? weather.impact : "Low wind speeds are currently limiting atmospheric dispersion, causing pollutants to remain highly concentrated over the city."}
+              {weather && weather.insights && weather.insights.length > 0 ? weather.insights[0] : "Low wind speeds are currently limiting atmospheric dispersion, causing pollutants to remain highly concentrated over the city."}
             </p>
           </div>
         </div>
@@ -256,7 +256,7 @@ const ExplainableAI = () => {
             <div style={{background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px'}}>
               <span className="text-muted" style={{fontSize: '0.8rem', textTransform: 'uppercase'}}>Overall Summary</span>
               <p style={{marginTop: '0.5rem', lineHeight: 1.5, fontSize: '0.95rem'}}>
-                {predExplanation ? predExplanation.explanation : `The XGBoost model predicts an AQI of ${predictedAQI} in 24 hours. The forecast relies heavily on the sudden drop in wind speed paired with rising traffic volume emissions.`}
+                {predExplanation && predExplanation.explanation ? predExplanation.explanation.join(' ') : `The XGBoost model predicts an AQI of ${predictedAQI} in 24 hours. The forecast relies heavily on the sudden drop in wind speed paired with rising traffic volume emissions.`}
               </p>
             </div>
             <div>
@@ -275,7 +275,7 @@ const ExplainableAI = () => {
           <h2 className="xai-section-title"><ShieldCheck size={20} /> Today's Decision Summary</h2>
           <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
             {insights ? (
-              <p style={{lineHeight: 1.6, color: 'var(--text-secondary)'}}>{insights.insights}</p>
+              <p style={{lineHeight: 1.6, color: 'var(--text-secondary)'}}>{insights.summary} {insights.weather_effect} {insights.recommendation}</p>
             ) : (
               <ul style={{paddingLeft: '1.25rem', color: 'var(--text-secondary)', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.75rem', margin: 0}}>
                 <li><strong>Traffic-related emissions</strong> are likely the dominant contributor to today's pollution levels.</li>
@@ -358,9 +358,9 @@ const ExplainableAI = () => {
               <div className="timeline-desc">Model expects conditions to worsen if traffic holds.</div>
             </div>
           </div>
-          {dailySummary && (
+          {dailySummary && dailySummary.recommendations && (
             <p style={{marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', fontSize: '0.9rem', color: 'var(--text-secondary)', borderLeft: '3px solid #3b82f6'}}>
-              {dailySummary.summary}
+              {dailySummary.recommendations.join(' ')}
             </p>
           )}
         </div>
