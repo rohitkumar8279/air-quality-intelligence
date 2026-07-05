@@ -11,7 +11,7 @@ const SummaryCard = ({ icon: Icon, title, value, subtitle, highlight, highlightC
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.5 }}
     style={{
-      background: isAI ? 'linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)' : 'var(--bg-card)',
+      background: isAI ? 'var(--bg-premium)' : 'var(--bg-card)',
       backdropFilter: 'blur(10px)',
       border: isAI ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid var(--border-light)',
       borderRadius: '12px',
@@ -34,8 +34,8 @@ const SummaryCard = ({ icon: Icon, title, value, subtitle, highlight, highlightC
         background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)'
       }} />
     )}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: isAI ? '#c4b5fd' : 'var(--text-secondary)', fontWeight: 600 }}>
-      <Icon size={16} color={isAI ? '#8b5cf6' : 'currentColor'} /> {title}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: isAI ? 'var(--text-premium-title)' : 'var(--text-secondary)', fontWeight: 600 }}>
+      <Icon size={16} color={isAI ? 'var(--icon-premium)' : 'currentColor'} /> {title}
     </div>
     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
       {value}

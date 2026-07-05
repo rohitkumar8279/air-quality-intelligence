@@ -354,3 +354,29 @@
     max-width: 100%;
   }
 }
+
+/* Light Mode Overrides for Explainable AI */
+[data-theme='light'] .xai-card.premium {
+  background: var(--bg-premium);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.1);
+}
+
+[data-theme='light'] .xai-card.premium::before {
+  opacity: 0.6;
+}
+
+[data-theme='light'] .xai-stat-box,
+[data-theme='light'] .contributor-item {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .progress-bar-bg,
+[data-theme='light'] .timeline::before {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='light'] .confidence-circle {
+  background: conic-gradient(#10b981 var(--value), rgba(0,0,0,0.05) 0);
+}

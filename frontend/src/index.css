@@ -21,6 +21,10 @@
   --accent-cyan: #06B6D4;
   --accent-purple: #8B5CF6;
   
+  --bg-premium: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+  --text-premium-title: #c4b5fd;
+  --icon-premium: #8b5cf6;
+  
   /* Status Colors */
   --status-good: #22C55E;       /* Green */
   --status-moderate: #F59E0B;   /* Yellow */
@@ -205,6 +209,10 @@ body {
   --border-light: rgba(0, 0, 0, 0.1);
   --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
   --shadow-glow: 0 0 30px rgba(6, 182, 212, 0.1);
+  
+  --bg-premium: linear-gradient(145deg, rgba(243, 244, 246, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%);
+  --text-premium-title: #7c3aed;
+  --icon-premium: #7c3aed;
 }
 
 /* Component Overrides for Light Mode */
