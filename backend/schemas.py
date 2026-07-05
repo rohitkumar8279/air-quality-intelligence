@@ -21,6 +21,9 @@ class AQIRecordResponse(AQIRecordBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class RankResponse(BaseModel):
+    best: Optional[AQIRecordResponse] = None
+    worst: Optional[AQIRecordResponse] = None
 
 # --- Phase 5: Historical Data Schemas ---
 

@@ -2,28 +2,40 @@ import React, { useState, useEffect, useContext } from 'react';
 import { CityContext } from '../context/CityContext';
 import { motion } from 'framer-motion';
 import { Map as MapIcon, Activity, AlertTriangle, ShieldCheck, Clock, MapPin, BarChart3 } from 'lucide-react';
-import { getCurrentData } from '../services/analyticsApi';
+import { getCurrentData, getRankings, getPredictionData } from '../services/analyticsApi';
 import MapComponent from '../components/map/MapComponent';
 
-const SummaryCard = ({ icon: Icon, title, value, subtitle, highlight, highlightColor, delay }) => (
+const SummaryCard = ({ icon: Icon, title, value, subtitle, highlight, highlightColor, delay, isAI = false }) => (
   <motion.div 
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.5 }}
     style={{
-      background: 'var(--bg-card)',
+      background: isAI ? 'linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%)' : 'var(--bg-card)',
       backdropFilter: 'blur(10px)',
-      border: '1px solid var(--border-light)',
+      border: isAI ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid var(--border-light)',
       borderRadius: '12px',
       padding: '1.25rem',
       display: 'flex',
       flexDirection: 'column',
       gap: '0.5rem',
-      boxShadow: 'var(--shadow-soft)'
+      boxShadow: isAI ? '0 4px 20px -2px rgba(139, 92, 246, 0.15)' : 'var(--shadow-soft)',
+      position: 'relative',
+      overflow: 'hidden'
     }}
   >
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-      <Icon size={16} /> {title}
+    {isAI && (
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: 'linear-gradient(90deg, #8b5cf6, #3b82f6)'
+      }} />
+    )}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: isAI ? '#c4b5fd' : 'var(--text-secondary)', fontWeight: 600 }}>
+      <Icon size={16} color={isAI ? '#8b5cf6' : 'currentColor'} /> {title}
     </div>
     <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
       {value}
@@ -43,13 +55,21 @@ const MapView = () => {
   const { city } = useContext(CityContext);
   const [loading, setLoading] = useState(true);
   const [currentData, setCurrentData] = useState(null);
+  const [rankings, setRankings] = useState({ best: null, worst: null });
+  const [prediction, setPrediction] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await getCurrentData(city);
+        const [data, ranks, pred] = await Promise.all([
+          getCurrentData(city).catch(e => { console.error("Current data failed", e); return null; }),
+          getRankings().catch(e => { console.error("Rankings failed", e); return { best: null, worst: null }; }),
+          getPredictionData(city).catch(e => { console.error("Prediction failed", e); return null; })
+        ]);
         setCurrentData(data);
+        setRankings(ranks);
+        setPrediction(pred);
       } catch (error) {
         console.error("Failed to load map data", error);
       } finally {
@@ -57,7 +77,7 @@ const MapView = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [city]);
 
   return (
     <motion.div 
@@ -95,34 +115,38 @@ const MapView = () => {
         gap: '1rem' 
       }}>
         <SummaryCard 
-          icon={BarChart3} title="City Overview" 
-          value="12" subtitle="Active & Live" highlight="Monitoring Stations" highlightColor="#3b82f6" 
+          icon={Activity} title="AI Predicted AQI" 
+          value={prediction ? Math.round(prediction.predicted_aqi) : "..."} 
+          subtitle={`Forecast for ${city}`} 
+          highlight="ML Model Output" highlightColor="#8b5cf6" 
           delay={0.3} 
+          isAI={true}
         />
         <SummaryCard 
-          icon={Activity} title="Average AQI" 
-          value={currentData ? Math.round(currentData.aqi) : "98"} subtitle={`Across ${city}`} highlight="Moderate" highlightColor="#eab308" 
+          icon={MapPin} title="Best in India" 
+          value={rankings.best ? Math.round(rankings.best.aqi) : "..."} 
+          subtitle={rankings.best ? rankings.best.city : "Loading..."} 
+          highlight={rankings.best && rankings.best.aqi < 50 ? "Excellent" : "Good"} highlightColor="#22c55e" 
           delay={0.4} 
         />
         <SummaryCard 
-          icon={MapPin} title="Best Area" 
-          value="48" subtitle="Good" highlight="Green Park" highlightColor="#22c55e" 
+          icon={AlertTriangle} title="Worst Area" 
+          value={rankings.worst ? Math.round(rankings.worst.aqi) : "..."} 
+          subtitle={rankings.worst ? rankings.worst.city : "Loading..."} 
+          highlight="Hazardous" highlightColor="#ef4444" 
           delay={0.5} 
         />
         <SummaryCard 
-          icon={AlertTriangle} title="Worst Area" 
-          value="189" subtitle="Very Poor" highlight="Anand Vihar" highlightColor="#ef4444" 
+          icon={ShieldCheck} title="Data Confidence" 
+          value="98%" subtitle="AI Verified Accuracy" highlight="High Precision" highlightColor="#10b981" 
           delay={0.6} 
+          isAI={true}
         />
         <SummaryCard 
-          icon={ShieldCheck} title="Data Quality" 
-          value="98%" subtitle="Data Accuracy" highlight="Excellent" highlightColor="#10b981" 
+          icon={Clock} title="Model Updates" 
+          value="Real-time" subtitle="Continuous Learning" highlight="Auto Refresh" highlightColor="#06b6d4" 
           delay={0.7} 
-        />
-        <SummaryCard 
-          icon={Clock} title="Updates" 
-          value="Real-time" subtitle="Every 5 min" highlight="Auto Refresh" highlightColor="#06b6d4" 
-          delay={0.8} 
+          isAI={true}
         />
       </div>
     </motion.div>

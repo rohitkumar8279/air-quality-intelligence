@@ -46,6 +46,19 @@ export const getPredictionData = async (city = "Delhi") => {
 };
 
 /**
+ * Fetch AQI rankings (best and worst areas)
+ */
+export const getRankings = async () => {
+  try {
+    const response = await api.get(`/rankings`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching AQI rankings:', error);
+    throw error;
+  }
+};
+
+/**
  * Fetch advanced live weather data directly from Open-Meteo
  */
 export const getAdvancedWeather = async (city = "Delhi") => {

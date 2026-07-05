@@ -65,3 +65,31 @@ def get_history_by_date_range(
         models.AQIRecord.timestamp >= start_datetime,
         models.AQIRecord.timestamp <= end_datetime
     ).order_by(models.AQIRecord.timestamp.desc()).offset(skip).limit(limit).all()
+
+def get_best_and_worst_aqi(db: Session):
+    """Gets the cities with the best and worst AQI from their latest records."""
+    from sqlalchemy import func
+    
+    # Subquery to get the latest timestamp for each city
+    subq = db.query(
+        models.AQIRecord.city,
+        func.max(models.AQIRecord.timestamp).label("max_time")
+    ).group_by(models.AQIRecord.city).subquery()
+    
+    # Query to get the full records for those latest timestamps
+    latest_records = db.query(models.AQIRecord).join(
+        subq,
+        (models.AQIRecord.city == subq.c.city) & 
+        (models.AQIRecord.timestamp == subq.c.max_time)
+    ).all()
+
+    if not latest_records:
+        return None, None
+
+    # Sort by AQI
+    sorted_records = sorted(latest_records, key=lambda x: x.aqi)
+    
+    best_record = sorted_records[0]
+    worst_record = sorted_records[-1]
+
+    return best_record, worst_record

@@ -248,6 +248,18 @@ def get_history(
 
 # --- Phase 7: ML Prediction Endpoint ---
 
+@app.get("/api/rankings", response_model=schemas.RankResponse, tags=["Air Quality"])
+def get_aqi_rankings(db: Session = Depends(get_db)):
+    """
+    Returns the cities with the best and worst AQI currently.
+    """
+    try:
+        best_record, worst_record = crud.get_best_and_worst_aqi(db)
+        return {"best": best_record, "worst": worst_record}
+    except Exception as e:
+        logger.error(f"Failed to fetch AQI rankings: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch AQI rankings.")
+
 @app.get("/api/predict", response_model=schemas.PredictionResponse, tags=["Prediction"])
 def predict_aqi(city: str = Query("Delhi"), db: Session = Depends(get_db)):
     """
