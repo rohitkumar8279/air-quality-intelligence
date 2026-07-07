@@ -1,11 +1,30 @@
 import api from './api';
 
+// ---------------------------------------------------------------------------
+// Simple in-memory TTL cache — avoids redundant fetches within 5 minutes
+// ---------------------------------------------------------------------------
+const _cache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+const getCached = (key) => {
+  const entry = _cache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL_MS) return entry.data;
+  return null;
+};
+
+const setCache = (key, data) => _cache.set(key, { data, ts: Date.now() });
+
 /**
  * Fetch current AQI data
  */
 export const getCurrentData = async (city = "Delhi") => {
+  const cacheKey = `current:${city}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   try {
     const response = await api.get(`/current?city=${encodeURIComponent(city)}`);
+    setCache(cacheKey, response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching current data for analytics:', error);
@@ -18,6 +37,10 @@ export const getCurrentData = async (city = "Delhi") => {
  * @param {Object} params - Query parameters (start_date, end_date, skip, limit, city)
  */
 export const getHistoryData = async ({ start_date, end_date, skip = 0, limit = 500, city = "Delhi" }) => {
+  const cacheKey = `history:${city}:${limit}:${skip}:${start_date ?? ''}:${end_date ?? ''}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
   try {
     let url = `/history?skip=${skip}&limit=${limit}&city=${encodeURIComponent(city)}`;
     if (start_date && end_date) {
@@ -25,6 +48,7 @@ export const getHistoryData = async ({ start_date, end_date, skip = 0, limit = 5
     }
 
     const response = await api.get(url);
+    setCache(cacheKey, response.data);
     return response.data;
   } catch (error) {
     console.error('Error fetching historical data for analytics:', error);

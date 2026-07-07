@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint, Index
 from datetime import datetime
 from backend.database import Base
 
@@ -8,6 +8,9 @@ class AQIRecord(Base):
     # Prevent duplicate records for the same city and timestamp
     __table_args__ = (
         UniqueConstraint('city', 'timestamp', name='uix_city_timestamp'),
+        # Composite index covering all hot queries: get_latest_aqi, get_history,
+        # get_history_by_date_range — all filter by city and order/range by timestamp
+        Index('ix_aqi_records_city_timestamp', 'city', 'timestamp'),
     )
 
     id = Column(Integer, primary_key=True, index=True)

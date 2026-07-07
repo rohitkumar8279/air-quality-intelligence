@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { CityContext } from '../context/CityContext';
 import { CITY_CONFIG } from '../config/cities';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
@@ -40,12 +40,15 @@ const MapCard = ({ aqi }) => {
 
   const mainAqi = aqi || 142;
 
-  // Major Indian cities for the "All India" view
-  const cities = Object.keys(CITY_CONFIG).map(cityName => ({
-    name: cityName,
-    pos: [CITY_CONFIG[cityName].lat, CITY_CONFIG[cityName].lon],
-    value: cityName === city ? mainAqi : Math.floor(Math.random() * 100) + 40 // Dummy for other cities
-  }));
+  // Major Indian cities for the "All India" view.
+  // useMemo prevents random values from re-randomizing on every parent render.
+  const cities = useMemo(() =>
+    Object.keys(CITY_CONFIG).map(cityName => ({
+      name: cityName,
+      pos: [CITY_CONFIG[cityName].lat, CITY_CONFIG[cityName].lon],
+      value: cityName === city ? mainAqi : Math.floor(Math.random() * 100) + 40
+    })),
+  [city, mainAqi]);
 
   return (
     <>

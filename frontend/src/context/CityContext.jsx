@@ -14,9 +14,19 @@ export const CityProvider = ({ children }) => {
   useEffect(() => {
     const loadCities = async () => {
       try {
+        // Check sessionStorage first — avoid re-fetching on every mount
+        const cached = sessionStorage.getItem('availableCities');
+        if (cached) {
+          const cities = JSON.parse(cached);
+          setAvailableCities(cities);
+          if (!cities.includes(city)) setCity(cities[0]);
+          return;
+        }
+
         const cities = await fetchCities();
         if (cities && cities.length > 0) {
           setAvailableCities(cities);
+          sessionStorage.setItem('availableCities', JSON.stringify(cities));
           // If the user's city isn't in the list, set it to the first available
           if (!cities.includes(city)) {
             setCity(cities[0]);

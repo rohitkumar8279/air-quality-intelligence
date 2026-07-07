@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, Query, BackgroundTasks, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -323,10 +323,13 @@ def get_daily_summary(city: str = Query("Delhi"), db: Session = Depends(get_db))
         raise HTTPException(status_code=500, detail="Failed to generate daily summary.")
 
 @app.get("/api/health-advice", tags=["AI Insights"])
-def get_health_advice(city: str = Query("Delhi"), db: Session = Depends(get_db)):
+def get_health_advice(city: str = Query("Delhi"), db: Session = Depends(get_db), response: Response = None):
     try:
         latest_record = crud.get_latest_aqi(db, city)
         aqi = latest_record.aqi if latest_record else 0
+        if response:
+            # Health advice changes with AQI — cache for 5 minutes
+            response.headers["Cache-Control"] = "public, max-age=300, s-maxage=300"
         return insights_service.generate_health_advice(aqi)
     except Exception as e:
         logger.error(f"Failed to generate health advice for {city}: {str(e)}")
@@ -351,9 +354,13 @@ def get_weather_impact(city: str = Query("Delhi"), db: Session = Depends(get_db)
         raise HTTPException(status_code=500, detail="Failed to generate weather impact.")
 
 @app.get("/api/feature-importance", tags=["AI Insights"])
-def get_feature_importance():
+def get_feature_importance(response: Response):
+    # This returns hardcoded data — cache for 1 hour at edge
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=3600"
     return insights_service.get_feature_importance()
 
 @app.get("/api/model-info", tags=["AI Insights"])
-def get_model_info():
+def get_model_info(response: Response):
+    # Static metadata — cache for 1 hour at edge
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=3600"
     return insights_service.get_model_info()
