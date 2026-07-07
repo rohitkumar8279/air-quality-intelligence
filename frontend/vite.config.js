@@ -7,17 +7,24 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React core — changes rarely, gets long-lived browser cache
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          // Charting library — heavy (~400KB), isolated chunk
-          'vendor-recharts': ['recharts'],
-          // Map library — heavy (~190KB), only needed on map pages
-          'vendor-leaflet': ['leaflet', 'react-leaflet'],
-          // Animation library
-          'vendor-motion': ['framer-motion'],
-          // PDF export — only downloaded when user clicks "Export"
-          'vendor-export': ['html2canvas', 'jspdf'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-recharts';
+            }
+            if (id.includes('leaflet') || id.includes('react-leaflet')) {
+              return 'vendor-leaflet';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('html2canvas') || id.includes('jspdf')) {
+              return 'vendor-export';
+            }
+          }
         }
       }
     },
