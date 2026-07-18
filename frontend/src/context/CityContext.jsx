@@ -4,9 +4,18 @@ import { fetchCities } from '../services/api';
 export const CityContext = createContext();
 
 export const CityProvider = ({ children }) => {
-  // Try to load from localStorage first, default to Delhi
+  // Try to load from localStorage first, default to app_settings defaultCity, then Delhi
   const [city, setCity] = useState(() => {
-    return localStorage.getItem('selectedCity') || 'Delhi';
+    const selected = localStorage.getItem('selectedCity');
+    if (selected) return selected;
+    const settings = localStorage.getItem('app_settings');
+    if (settings) {
+      try {
+        const parsed = JSON.parse(settings);
+        if (parsed.defaultCity) return parsed.defaultCity;
+      } catch (e) {}
+    }
+    return 'Delhi';
   });
 
   const [availableCities, setAvailableCities] = useState(["Delhi", "Mumbai", "Bengaluru", "Chennai"]);

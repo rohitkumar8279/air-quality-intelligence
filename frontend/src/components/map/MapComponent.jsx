@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { CityContext } from '../../context/CityContext';
+import { SettingsContext } from '../../context/SettingsContext';
 import { CITY_CONFIG } from '../../config/cities';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -116,11 +117,13 @@ const MapComponent = ({ currentData }) => {
     return <div className="loader-container" style={{ height: '600px' }}><div className="loader"></div></div>;
   }
 
+  const { settings } = useContext(SettingsContext);
+
   const handleZoomIn = () => window.customMapControl?.zoomIn();
   const handleZoomOut = () => window.customMapControl?.zoomOut();
   const handleTarget = () => {
     setCenter([baseLat, baseLon]);
-    window.customMapControl?.flyTo(baseLat, baseLon, 11);
+    window.customMapControl?.flyTo(baseLat, baseLon, settings.defaultZoom || 11);
   };
 
   const createOverviewIcon = (region, isSelected) => {
@@ -173,7 +176,7 @@ const MapComponent = ({ currentData }) => {
 
       <MapContainer 
         center={center} 
-        zoom={11} 
+        zoom={settings.defaultZoom || 11} 
         style={{ height: '100%', width: '100%', zIndex: 1 }}
         scrollWheelZoom={true}
         zoomControl={false}
@@ -299,7 +302,7 @@ const MapComponent = ({ currentData }) => {
               
               <div className="metric-row">
                 <span className="metric-label"><Thermometer size={16} color="#f97316" /> Temperature</span>
-                <span className="metric-val">{Math.round(selectedRegion.temperature)}°C</span>
+                <span className="metric-val">{Math.round(settings.units === 'Fahrenheit' ? (selectedRegion.temperature * 9/5) + 32 : selectedRegion.temperature)}{settings.units === 'Fahrenheit' ? '°F' : '°C'}</span>
               </div>
               <div className="metric-row">
                 <span className="metric-label"><Droplets size={16} color="#3b82f6" /> Humidity</span>

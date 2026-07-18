@@ -60,7 +60,7 @@ export const FeatureImportanceChart = () => {
                 contentStyle={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
                 formatter={(val) => [(val * 100).toFixed(1) + '%', 'Importance']}
               />
-              <Bar dataKey="importance" radius={[0, 4, 4, 0]}>
+              <Bar dataKey="importance" radius={[0, 4, 4, 0]} animationDuration={3000}>
                 {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : index === 1 ? '#f59e0b' : '#3b82f6'} />
                 ))}
@@ -101,6 +101,7 @@ export const PollutionAnalysisCard = () => {
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="percentage"
+                  animationDuration={3000}
                 >
                   {data.contributions.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

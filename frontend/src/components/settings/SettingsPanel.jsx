@@ -1,34 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useContext } from 'react';
 import { User, Moon, BellRing, Map, Globe, ShieldCheck, Database, Cpu, Activity, Save } from 'lucide-react';
+import { SettingsContext } from '../../context/SettingsContext';
 
 const SettingsPanel = () => {
-  const [settings, setSettings] = useState({
-    name: 'Admin User',
-    email: 'admin@airquality.ai',
-    theme: 'Dark',
-    notifications: true,
-    predictiveAlerts: true,
-    weatherAlerts: true,
-    defaultCity: 'Delhi, India',
-    defaultZoom: 11,
-    language: 'English',
-    units: 'Celsius',
-    windUnit: 'km/h'
-  });
-
+  const { settings, updateSettings } = useContext(SettingsContext);
+  const [localSettings, setLocalSettings] = useState(settings);
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const loaded = localStorage.getItem('app_settings');
-    if (loaded) {
-      setSettings(JSON.parse(loaded));
-    }
-  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setSettings(prev => ({
+    setLocalSettings(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
@@ -36,7 +17,7 @@ const SettingsPanel = () => {
   };
 
   const saveSettings = () => {
-    localStorage.setItem('app_settings', JSON.stringify(settings));
+    updateSettings(localSettings);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -50,11 +31,11 @@ const SettingsPanel = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Full Name</label>
-            <input type="text" name="name" value={settings.name} onChange={handleChange} className="form-input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }} />
+            <input type="text" name="name" value={localSettings.name} onChange={handleChange} className="form-input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Email Address</label>
-            <input type="email" name="email" value={settings.email} onChange={handleChange} className="form-input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }} />
+            <input type="email" name="email" value={localSettings.email} onChange={handleChange} className="form-input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }} />
           </div>
         </div>
       </motion.div>
@@ -65,7 +46,7 @@ const SettingsPanel = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Theme Preference</label>
-            <select name="theme" value={settings.theme} onChange={handleChange} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+            <select name="theme" value={localSettings.theme} onChange={handleChange} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
               <option>Dark</option>
               <option>Light</option>
               <option>System Default</option>
@@ -74,14 +55,14 @@ const SettingsPanel = () => {
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Temperature</label>
-              <select name="units" value={settings.units} onChange={handleChange} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+              <select name="units" value={localSettings.units} onChange={handleChange} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
                 <option>Celsius</option>
                 <option>Fahrenheit</option>
               </select>
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Language</label>
-              <select name="language" value={settings.language} onChange={handleChange} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
+              <select name="language" value={localSettings.language} onChange={handleChange} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }}>
                 <option>English</option>
                 <option>Hindi</option>
                 <option>Spanish</option>
@@ -96,15 +77,15 @@ const SettingsPanel = () => {
         <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: 0 }}><BellRing color="var(--accent-yellow)" /> Notifications</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-            <input type="checkbox" name="notifications" checked={settings.notifications} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
+            <input type="checkbox" name="notifications" checked={localSettings.notifications} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
             <span>Enable Push Notifications</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-            <input type="checkbox" name="predictiveAlerts" checked={settings.predictiveAlerts} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
+            <input type="checkbox" name="predictiveAlerts" checked={localSettings.predictiveAlerts} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
             <span>Predictive AQI Alerts (AI)</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-            <input type="checkbox" name="weatherAlerts" checked={settings.weatherAlerts} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
+            <input type="checkbox" name="weatherAlerts" checked={localSettings.weatherAlerts} onChange={handleChange} style={{ width: '18px', height: '18px' }} />
             <span>Severe Weather Alerts</span>
           </label>
         </div>
@@ -116,11 +97,11 @@ const SettingsPanel = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Default City</label>
-            <input type="text" name="defaultCity" value={settings.defaultCity} onChange={handleChange} className="form-input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }} />
+            <input type="text" name="defaultCity" value={localSettings.defaultCity} onChange={handleChange} className="form-input" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-main)', color: 'var(--text-primary)' }} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Default Zoom Level ({settings.defaultZoom})</label>
-            <input type="range" name="defaultZoom" min="1" max="18" value={settings.defaultZoom} onChange={handleChange} style={{ width: '100%' }} />
+            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Default Zoom Level ({localSettings.defaultZoom})</label>
+            <input type="range" name="defaultZoom" min="1" max="18" value={localSettings.defaultZoom} onChange={handleChange} style={{ width: '100%' }} />
           </div>
         </div>
       </motion.div>

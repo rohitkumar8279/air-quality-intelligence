@@ -35,6 +35,7 @@ class ErrorBoundary extends React.Component {
 
 import { AuthProvider } from './context/AuthContext.jsx'
 import { CityProvider } from './context/CityContext.jsx'
+import { SettingsProvider } from './context/SettingsContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -42,7 +43,9 @@ createRoot(document.getElementById('root')).render(
       <BrowserRouter>
         <AuthProvider>
           <CityProvider>
-            <App />
+            <SettingsProvider>
+              <App />
+            </SettingsProvider>
           </CityProvider>
         </AuthProvider>
       </BrowserRouter>

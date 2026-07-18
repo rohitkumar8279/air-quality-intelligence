@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Line
 } from 'recharts';
 
-export const TemperatureTrendChart = ({ historyData }) => {
+export const TemperatureTrendChart = ({ historyData, isFahrenheit }) => {
   const chartData = useMemo(() => {
     if (!historyData) return [];
     return [...historyData]
@@ -11,7 +11,7 @@ export const TemperatureTrendChart = ({ historyData }) => {
       .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
       .map(item => ({
         time: new Date(item.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit' }),
-        temp: Math.round(item.temperature),
+        temp: isFahrenheit ? Math.round((item.temperature * 9/5) + 32) : Math.round(item.temperature),
       }));
   }, [historyData]);
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { motion } from 'framer-motion';
 import { CloudSun } from 'lucide-react';
 import { CityContext } from '../context/CityContext';
+import { SettingsContext } from '../context/SettingsContext';
 import { getCurrentData, getHistoryData, getAdvancedWeather } from '../services/analyticsApi';
 
 import WeatherDashboardCards from '../components/weather/WeatherCards';
@@ -10,6 +11,7 @@ import ChartContainer from '../components/analytics/ChartContainer';
 
 const Weather = () => {
   const { city } = useContext(CityContext);
+  const { settings } = useContext(SettingsContext);
   const [loading, setLoading] = useState(true);
   const [currentData, setCurrentData] = useState(null);
   const [advancedData, setAdvancedData] = useState(null);
@@ -64,8 +66,8 @@ const Weather = () => {
       <WeatherDashboardCards currentData={currentData} advancedData={advancedData} />
 
       <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', marginBottom: '1.5rem' }}>
-        <ChartContainer title="Temperature Trend (°C)" delay={8}>
-          <TemperatureTrendChart historyData={historyData} />
+        <ChartContainer title={`Temperature Trend (${settings.units === 'Fahrenheit' ? '°F' : '°C'})`} delay={8}>
+          <TemperatureTrendChart historyData={historyData} isFahrenheit={settings.units === 'Fahrenheit'} />
         </ChartContainer>
         
         <ChartContainer title="Humidity (%) vs Wind Speed (km/h)" delay={9}>

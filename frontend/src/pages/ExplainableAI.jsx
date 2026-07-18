@@ -262,7 +262,7 @@ const ExplainableAI = () => {
                   contentStyle={{backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-light)', borderRadius: '8px'}}
                   itemStyle={{color: '#fff'}}
                 />
-                <Bar dataKey={pollution && pollution.contributions ? "percentage" : "value"} fill="#3b82f6" radius={[0, 4, 4, 0]}>
+                <Bar dataKey={pollution && pollution.contributions ? "percentage" : "value"} fill="#3b82f6" radius={[0, 4, 4, 0]} animationDuration={3000}>
                   {sourceAttribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={index === 0 ? '#ef4444' : index === 1 ? '#f59e0b' : '#3b82f6'} />
                   ))}
@@ -392,7 +392,7 @@ const ExplainableAI = () => {
                   itemStyle={{color: '#fff'}}
                   formatter={(value) => [(value * 100).toFixed(1) + '%', 'Importance']}
                 />
-                <Bar dataKey="importance" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="importance" fill="#8b5cf6" radius={[0, 4, 4, 0]} animationDuration={3000} />
               </BarChart>
             </ResponsiveContainer>
           </div>

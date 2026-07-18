@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { Thermometer, Droplets, Wind, Gauge, Sun, Cloud, CloudRain, Sunrise, Sunset, Eye } from 'lucide-react';
+import { SettingsContext } from '../../context/SettingsContext';
 
 const WeatherCard = ({ title, value, unit, icon: Icon, delay = 0, subtitle }) => (
   <motion.div 
@@ -26,14 +27,25 @@ const WeatherCard = ({ title, value, unit, icon: Icon, delay = 0, subtitle }) =>
 );
 
 const WeatherDashboardCards = ({ currentData, advancedData }) => {
+  const { settings } = useContext(SettingsContext);
   if (!currentData) return null;
 
-  const temp = currentData.temperature ? Math.round(currentData.temperature) : '--';
+  const isFahrenheit = settings.units === 'Fahrenheit';
+  
+  const getTemp = (t) => {
+    if (t === undefined || t === null) return '--';
+    if (isFahrenheit) return Math.round((t * 9/5) + 32);
+    return Math.round(t);
+  };
+  
+  const tempUnit = isFahrenheit ? '°F' : '°C';
+
+  const temp = getTemp(currentData.temperature);
   const humidity = currentData.humidity ? Math.round(currentData.humidity) : '--';
   const wind = currentData.wind_speed ? currentData.wind_speed.toFixed(1) : '--';
 
   // Advanced Data Fallbacks
-  const feelsLike = advancedData?.feels_like !== undefined && advancedData?.feels_like !== null ? Math.round(advancedData.feels_like) : '--';
+  const feelsLike = getTemp(advancedData?.feels_like);
   const pressure = advancedData?.pressure !== undefined && advancedData?.pressure !== null ? Math.round(advancedData.pressure) : '--';
   const visibility = advancedData?.visibility !== undefined && advancedData?.visibility !== null ? advancedData.visibility : '--';
   const uvIndex = advancedData?.uv_index !== undefined && advancedData?.uv_index !== null ? Math.round(advancedData.uv_index) : '--';
@@ -43,7 +55,7 @@ const WeatherDashboardCards = ({ currentData, advancedData }) => {
 
   return (
     <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '1.5rem' }}>
-      <WeatherCard title="Temperature" value={temp} unit="°C" icon={Thermometer} delay={1} subtitle={`Feels like ${feelsLike}°C`} />
+      <WeatherCard title="Temperature" value={temp} unit={tempUnit} icon={Thermometer} delay={1} subtitle={`Feels like ${feelsLike}${tempUnit}`} />
       <WeatherCard title="Humidity" value={humidity} unit="%" icon={Droplets} delay={2} subtitle={`Actual relative humidity`} />
       <WeatherCard title="Wind Speed" value={wind} unit="km/h" icon={Wind} delay={3} subtitle={`Direction: ${windDirection}`} />
       <WeatherCard title="Pressure" value={pressure} unit="hPa" icon={Gauge} delay={4} subtitle="Surface Level" />
