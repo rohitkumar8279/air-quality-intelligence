@@ -10,6 +10,11 @@ class ErrorBoundary extends React.Component {
     this.state = { hasError: false, error: null, errorInfo: null };
   }
   static getDerivedStateFromError(error) {
+    if (error && error.message && error.message.includes('Failed to fetch dynamically imported module')) {
+      // Auto-reload to fetch new chunks after a new deployment
+      window.location.reload();
+      return { hasError: false, error: null };
+    }
     return { hasError: true, error };
   }
   componentDidCatch(error, errorInfo) {
