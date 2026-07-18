@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import { motion } from 'framer-motion';
 import { User, Moon, BellRing, Map, Globe, ShieldCheck, Database, Cpu, Activity, Save } from 'lucide-react';
 import { SettingsContext } from '../../context/SettingsContext';
 
